@@ -150,15 +150,20 @@ function mergeEvidence(base: SubjectEvidence, overlay: SubjectEvidence): Subject
 
 function mergeAvailability(
   base: SubjectEvidence["availability"],
-  overlay: { hardSignalSourceAvailable?: boolean; freshCacheForSignal?: boolean }
+  overlay: { hardSignalSourceAvailable?: boolean; freshCacheForSignal?: boolean; provenanceVerificationAvailable?: boolean }
 ): SubjectEvidence["availability"] {
   const hardSignalSourceAvailable =
     (base?.hard_signal_source_available ?? true) && (overlay.hardSignalSourceAvailable ?? true);
+  const provenanceVerificationAvailable =
+    base?.provenance_verification_available === false || overlay.provenanceVerificationAvailable === false
+      ? false
+      : base?.provenance_verification_available ?? overlay.provenanceVerificationAvailable;
 
   return {
     ...base,
     hard_signal_source_available: hardSignalSourceAvailable,
-    fresh_cache_for_hard_signal: Boolean(base?.fresh_cache_for_hard_signal || overlay.freshCacheForSignal)
+    fresh_cache_for_hard_signal: Boolean(base?.fresh_cache_for_hard_signal || overlay.freshCacheForSignal),
+    provenance_verification_available: provenanceVerificationAvailable
   };
 }
 
@@ -351,10 +356,8 @@ async function fetchNpmEvidence(subject: ResolvedDependency, config: FetcherConf
         evidence.availability = {
           ...evidence.availability,
           hard_signal_source_available: false,
-          fresh_cache_for_hard_signal: Boolean(
-            attestationResult.freshCacheForSignal ||
-              keyResult.freshCacheForSignal
-          )
+          fresh_cache_for_hard_signal: Boolean(attestationResult.freshCacheForSignal || keyResult.freshCacheForSignal),
+          ...(verification.checked === false ? { provenance_verification_available: false } : {})
         };
       }
     } else {
@@ -503,7 +506,8 @@ async function fetchPypiEvidence(subject: ResolvedDependency, config: FetcherCon
         evidence.availability = {
           ...evidence.availability,
           hard_signal_source_available: false,
-          fresh_cache_for_hard_signal: anyFreshCache
+          fresh_cache_for_hard_signal: anyFreshCache,
+          ...(allChecked ? {} : { provenance_verification_available: false })
         };
       }
     }

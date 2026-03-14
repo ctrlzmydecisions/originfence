@@ -215,6 +215,7 @@ export interface SubjectEvidence {
     hard_signal_source_available?: boolean;
     soft_signal_source_available?: boolean;
     fresh_cache_for_hard_signal?: boolean;
+    provenance_verification_available?: boolean;
   };
 }
 

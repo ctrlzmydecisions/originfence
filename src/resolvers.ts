@@ -76,6 +76,39 @@ function classifySource(spec: string | undefined | null): SourceType {
   return "registry";
 }
 
+function classifyNpmResolvedSource(resolved: string | undefined | null): SourceType {
+  if (!resolved) {
+    return "registry";
+  }
+
+  if (resolved.startsWith("git+") || resolved.startsWith("github:") || resolved.startsWith("git@")) {
+    return "vcs";
+  }
+
+  if (
+    resolved.startsWith("file:") ||
+    resolved.startsWith("link:") ||
+    resolved.startsWith("./") ||
+    resolved.startsWith("../") ||
+    resolved.startsWith("/")
+  ) {
+    return "file";
+  }
+
+  if (resolved.startsWith("http://") || resolved.startsWith("https://")) {
+    if (resolved.includes(".git")) {
+      return "vcs";
+    }
+
+    // package-lock.json stores the fetched artifact URL here for ordinary registry
+    // packages, so treat plain tarball downloads as registry resolutions unless a
+    // manifest or legacy lock entry declared a non-registry source explicitly.
+    return "registry";
+  }
+
+  return "registry";
+}
+
 function extractRegistryHost(spec: string | undefined | null): string | undefined {
   if (!spec) {
     return undefined;
@@ -145,7 +178,7 @@ function parseNpmLockSubjects(
 
       const topLevelSpec = topLevelSpecs.get(name);
       const sourceRef = topLevelSpec ?? metadata.resolved;
-      const sourceType = classifySource(sourceRef);
+      const sourceType = topLevelSpec ? classifySource(topLevelSpec) : classifyNpmResolvedSource(metadata.resolved);
 
       subjects.push({
         ecosystem: "npm",
@@ -166,8 +199,9 @@ function parseNpmLockSubjects(
   const walk = (dependencies: Record<string, PackageLockDependencyNode>, topLevel = false): void => {
     for (const [name, dependency] of Object.entries(dependencies)) {
       const topLevelSpec = topLevelSpecs.get(name);
-      const sourceRef = topLevelSpec ?? dependency.resolved;
-      const sourceType = classifySource(sourceRef);
+      const inferredDeclaredSpec = topLevelSpec ?? (classifySource(dependency.version) === "registry" ? undefined : dependency.version);
+      const sourceRef = inferredDeclaredSpec ?? dependency.resolved;
+      const sourceType = inferredDeclaredSpec ? classifySource(inferredDeclaredSpec) : classifyNpmResolvedSource(dependency.resolved);
 
       subjects.push({
         ecosystem: "npm",
@@ -351,7 +385,7 @@ async function parseRequirementsFile(
       continue;
     }
 
-    const includeMatch = trimmed.match(/^(?:-r|--requirement|-c|--constraint)\s+(.+)$/u);
+    const includeMatch = trimmed.match(/^(?:-r|--requirement)\s+(.+)$/u);
 
     if (includeMatch) {
       const includeTarget = includeMatch[1]?.trim();
@@ -360,6 +394,12 @@ async function parseRequirementsFile(
         subjects.push(...await parseRequirementsFile(repoPath, resolveIncludedRequirementsPath(normalizedPath, includeTarget), visited));
       }
 
+      continue;
+    }
+
+    const constraintMatch = trimmed.match(/^(?:-c|--constraint)\s+(.+)$/u);
+
+    if (constraintMatch) {
       continue;
     }
 

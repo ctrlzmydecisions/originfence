@@ -115,6 +115,19 @@ function sha512HexFromIntegrity(integrity: string | undefined): string | null {
   return Buffer.from(base64FromBase64Url(encoded), "base64").toString("hex");
 }
 
+function isTrustedNpmRegistryUrl(value: string | undefined): boolean {
+  if (!value) {
+    return false;
+  }
+
+  try {
+    const host = new URL(value).host;
+    return host === "registry.npmjs.org" || host === "npmjs.org";
+  } catch {
+    return false;
+  }
+}
+
 function buildTufCachePath(cacheDir: string): string {
   return path.join(cacheDir, VERIFY_CACHE_SUBDIR);
 }
@@ -282,7 +295,7 @@ export async function verifyNpmProvenance(
     const predicateRegistry = typeof statement?.predicate?.registry === "string" ? statement.predicate.registry : undefined;
     const digestMatch = subjectEntry?.digest?.sha512 === expectedDigest;
 
-    if (!subjectEntry || !digestMatch || predicateName !== subject.name || predicateVersion !== subject.version || !predicateRegistry?.includes("npmjs.org")) {
+    if (!subjectEntry || !digestMatch || predicateName !== subject.name || predicateVersion !== subject.version || !isTrustedNpmRegistryUrl(predicateRegistry)) {
       continue;
     }
 

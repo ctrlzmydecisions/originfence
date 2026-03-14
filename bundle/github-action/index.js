@@ -46102,7 +46102,10 @@ function buildEvaluationMeta(evaluatedAt, evidence, availability) {
     const staleEvidenceRefs = evidence.filter((record) => record.stale).map((record) => record.id);
     let hardSignalState = "not_checked";
     let softSignalState = "not_checked";
-    if (availability?.hard_signal_source_available === false) {
+    if (availability?.provenance_verification_available === false) {
+        hardSignalState = "missing";
+    }
+    else if (availability?.hard_signal_source_available === false) {
         hardSignalState = availability.fresh_cache_for_hard_signal ? "stale" : "missing";
     }
     else if (staleEvidenceRefs.length > 0) {
@@ -46236,6 +46239,15 @@ async function buildSubjectResult(subject, policy, waivers, fetcher, evaluatedAt
             waivable: definition.waivable
         });
     };
+    const addHardSignalUnavailableReason = (ref) => {
+        const evidenceRef = builder.add({
+            source: "hard_signal_source",
+            kind: "cache_meta",
+            ref
+        });
+        addReason("HARD_SIGNAL_SOURCE_UNAVAILABLE");
+        reasons.at(-1)?.evidence_refs.push(evidenceRef);
+    };
     if (subject.source_type === "registry" && !isSourceAllowed(subject, policy)) {
         const ref = builder.add({
             source: "policy",
@@ -46361,14 +46373,11 @@ async function buildSubjectResult(subject, policy, waivers, fetcher, evaluatedAt
         addReason("SOFT_SIGNAL_SOURCE_UNAVAILABLE");
         reasons.at(-1)?.evidence_refs.push(ref);
     }
-    if (evidenceInput.availability?.hard_signal_source_available === false && !evidenceInput.availability.fresh_cache_for_hard_signal) {
-        const ref = builder.add({
-            source: "hard_signal_source",
-            kind: "cache_meta",
-            ref: subject.name
-        });
-        addReason("HARD_SIGNAL_SOURCE_UNAVAILABLE");
-        reasons.at(-1)?.evidence_refs.push(ref);
+    if (provenanceAction && evidenceInput.availability?.provenance_verification_available === false) {
+        addHardSignalUnavailableReason(evidenceInput.provenance?.ref ?? subject.name);
+    }
+    else if (evidenceInput.availability?.hard_signal_source_available === false && !evidenceInput.availability.fresh_cache_for_hard_signal) {
+        addHardSignalUnavailableReason(subject.name);
     }
     reasons.sort((left, right) => {
         const decisionDelta = compareDecisions(right.decision, left.decision);
@@ -46642,10 +46651,14 @@ function mergeEvidence(base, overlay) {
 }
 function mergeAvailability(base, overlay) {
     const hardSignalSourceAvailable = (base?.hard_signal_source_available ?? true) && (overlay.hardSignalSourceAvailable ?? true);
+    const provenanceVerificationAvailable = base?.provenance_verification_available === false || overlay.provenanceVerificationAvailable === false
+        ? false
+        : base?.provenance_verification_available ?? overlay.provenanceVerificationAvailable;
     return {
         ...base,
         hard_signal_source_available: hardSignalSourceAvailable,
-        fresh_cache_for_hard_signal: Boolean(base?.fresh_cache_for_hard_signal || overlay.freshCacheForSignal)
+        fresh_cache_for_hard_signal: Boolean(base?.fresh_cache_for_hard_signal || overlay.freshCacheForSignal),
+        provenance_verification_available: provenanceVerificationAvailable
     };
 }
 function buildDriftSnapshot(subject, registry, capturedAt, serial) {
@@ -46803,8 +46816,8 @@ async function fetchNpmEvidence(subject, config, options) {
                 evidence.availability = {
                     ...evidence.availability,
                     hard_signal_source_available: false,
-                    fresh_cache_for_hard_signal: Boolean(attestationResult.freshCacheForSignal ||
-                        keyResult.freshCacheForSignal)
+                    fresh_cache_for_hard_signal: Boolean(attestationResult.freshCacheForSignal || keyResult.freshCacheForSignal),
+                    ...(verification.checked === false ? { provenance_verification_available: false } : {})
                 };
             }
         }
@@ -46938,7 +46951,8 @@ async function fetchPypiEvidence(subject, config, options) {
                 evidence.availability = {
                     ...evidence.availability,
                     hard_signal_source_available: false,
-                    fresh_cache_for_hard_signal: anyFreshCache
+                    fresh_cache_for_hard_signal: anyFreshCache,
+                    ...(allChecked ? {} : { provenance_verification_available: false })
                 };
             }
         }
@@ -47883,6 +47897,18 @@ function sha512HexFromIntegrity(integrity) {
     const encoded = integrity.slice("sha512-".length);
     return Buffer.from(base64FromBase64Url(encoded), "base64").toString("hex");
 }
+function isTrustedNpmRegistryUrl(value) {
+    if (!value) {
+        return false;
+    }
+    try {
+        const host = new URL(value).host;
+        return host === "registry.npmjs.org" || host === "npmjs.org";
+    }
+    catch {
+        return false;
+    }
+}
 function buildTufCachePath(cacheDir) {
     return node_path_1.default.join(cacheDir, VERIFY_CACHE_SUBDIR);
 }
@@ -48023,7 +48049,7 @@ async function verifyNpmProvenance(payload, subject, registryKeys, expectedDiges
         const predicateVersion = typeof statement?.predicate?.version === "string" ? statement.predicate.version : undefined;
         const predicateRegistry = typeof statement?.predicate?.registry === "string" ? statement.predicate.registry : undefined;
         const digestMatch = subjectEntry?.digest?.sha512 === expectedDigest;
-        if (!subjectEntry || !digestMatch || predicateName !== subject.name || predicateVersion !== subject.version || !predicateRegistry?.includes("npmjs.org")) {
+        if (!subjectEntry || !digestMatch || predicateName !== subject.name || predicateVersion !== subject.version || !isTrustedNpmRegistryUrl(predicateRegistry)) {
             continue;
         }
         const verification = await verifyBundleWithSigstore(attestation.bundle, cacheDir, (hint) => {
@@ -48164,6 +48190,31 @@ function classifySource(spec) {
     }
     return "registry";
 }
+function classifyNpmResolvedSource(resolved) {
+    if (!resolved) {
+        return "registry";
+    }
+    if (resolved.startsWith("git+") || resolved.startsWith("github:") || resolved.startsWith("git@")) {
+        return "vcs";
+    }
+    if (resolved.startsWith("file:") ||
+        resolved.startsWith("link:") ||
+        resolved.startsWith("./") ||
+        resolved.startsWith("../") ||
+        resolved.startsWith("/")) {
+        return "file";
+    }
+    if (resolved.startsWith("http://") || resolved.startsWith("https://")) {
+        if (resolved.includes(".git")) {
+            return "vcs";
+        }
+        // package-lock.json stores the fetched artifact URL here for ordinary registry
+        // packages, so treat plain tarball downloads as registry resolutions unless a
+        // manifest or legacy lock entry declared a non-registry source explicitly.
+        return "registry";
+    }
+    return "registry";
+}
 function extractRegistryHost(spec) {
     if (!spec) {
         return undefined;
@@ -48216,7 +48267,7 @@ function parseNpmLockSubjects(lockfile, packageJson) {
             }
             const topLevelSpec = topLevelSpecs.get(name);
             const sourceRef = topLevelSpec ?? metadata.resolved;
-            const sourceType = classifySource(sourceRef);
+            const sourceType = topLevelSpec ? classifySource(topLevelSpec) : classifyNpmResolvedSource(metadata.resolved);
             subjects.push({
                 ecosystem: "npm",
                 name,
@@ -48234,8 +48285,9 @@ function parseNpmLockSubjects(lockfile, packageJson) {
     const walk = (dependencies, topLevel = false) => {
         for (const [name, dependency] of Object.entries(dependencies)) {
             const topLevelSpec = topLevelSpecs.get(name);
-            const sourceRef = topLevelSpec ?? dependency.resolved;
-            const sourceType = classifySource(sourceRef);
+            const inferredDeclaredSpec = topLevelSpec ?? (classifySource(dependency.version) === "registry" ? undefined : dependency.version);
+            const sourceRef = inferredDeclaredSpec ?? dependency.resolved;
+            const sourceType = inferredDeclaredSpec ? classifySource(inferredDeclaredSpec) : classifyNpmResolvedSource(dependency.resolved);
             subjects.push({
                 ecosystem: "npm",
                 name,
@@ -48369,12 +48421,16 @@ async function parseRequirementsFile(repoPath, relativePath, visited) {
         if (!trimmed || trimmed.startsWith("#")) {
             continue;
         }
-        const includeMatch = trimmed.match(/^(?:-r|--requirement|-c|--constraint)\s+(.+)$/u);
+        const includeMatch = trimmed.match(/^(?:-r|--requirement)\s+(.+)$/u);
         if (includeMatch) {
             const includeTarget = includeMatch[1]?.trim();
             if (includeTarget) {
                 subjects.push(...await parseRequirementsFile(repoPath, resolveIncludedRequirementsPath(normalizedPath, includeTarget), visited));
             }
+            continue;
+        }
+        const constraintMatch = trimmed.match(/^(?:-c|--constraint)\s+(.+)$/u);
+        if (constraintMatch) {
             continue;
         }
         const editableMatch = trimmed.match(/^(?:-e|--editable)\s+(.+)$/u);

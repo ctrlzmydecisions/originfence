@@ -2,6 +2,15 @@
 
 All notable changes to OriginFence should be recorded in this file.
 
+## 0.1.1-alpha - 2026-03-14
+
+Alpha patch release:
+- fix npm lockfile source classification so normal registry tarball URLs are not misclassified as `DIRECT_URL_SOURCE`
+- stop treating Python constraint files as dependency declarations during `requirements.txt` parsing
+- fail closed when required provenance cannot be verified because trust-root or verifier sources are unavailable
+- tighten npm provenance registry host matching to explicit trusted hosts
+- normalize fixture policy source paths so CI stays stable across local and GitHub-hosted environments
+
 ## 0.1.0-alpha - 2026-03-14
 
 Initial public alpha surface:

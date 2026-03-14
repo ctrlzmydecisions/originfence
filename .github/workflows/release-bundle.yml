@@ -1,0 +1,82 @@
+name: Release Bundle
+
+on:
+  release:
+    types:
+      - published
+
+permissions:
+  contents: write
+  attestations: write
+  id-token: write
+
+concurrency:
+  group: release-bundle-${{ github.event.release.tag_name }}
+  cancel-in-progress: false
+
+jobs:
+  bundle:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout tagged release
+        uses: actions/checkout@v6
+        with:
+          ref: ${{ github.event.release.tag_name }}
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Test
+        run: npm test
+
+      - name: Build packaged action
+        run: npm run build
+
+      - name: Verify committed bundle is up to date
+        shell: bash
+        run: |
+          if [[ -n "$(git status --porcelain -- bundle/github-action)" ]]; then
+            echo "Committed bundle is out of date. Run 'npm run build' and commit the generated files." >&2
+            git status --short -- bundle/github-action >&2
+            git diff -- bundle/github-action >&2 || true
+            exit 1
+          fi
+
+      - id: package
+        name: Package release bundle
+        shell: bash
+        run: |
+          mkdir -p release
+          bundle_name="originfence-action-${{ github.event.release.tag_name }}.tgz"
+          tar \
+            --sort=name \
+            --mtime='UTC 1970-01-01' \
+            --owner=0 \
+            --group=0 \
+            --numeric-owner \
+            -czf "release/${bundle_name}" \
+            action.yml \
+            LICENSE \
+            README.md \
+            package.json \
+            bundle/github-action
+          sha256sum "release/${bundle_name}" > release/SHA256SUMS.txt
+          echo "bundle=release/${bundle_name}" >> "$GITHUB_OUTPUT"
+
+      - name: Upload release assets
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release upload "${{ github.event.release.tag_name }}" "${{ steps.package.outputs.bundle }}" release/SHA256SUMS.txt --clobber
+
+      - name: Attest release bundle
+        uses: actions/attest-build-provenance@v3
+        with:
+          subject-path: ${{ steps.package.outputs.bundle }}

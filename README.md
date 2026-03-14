@@ -1,10 +1,13 @@
 # OriginFence
 
+[![CI](https://github.com/ctrlzmydecisions/originfence/actions/workflows/ci.yml/badge.svg)](https://github.com/ctrlzmydecisions/originfence/actions/workflows/ci.yml)
+[![OriginFence Self Trial](https://github.com/ctrlzmydecisions/originfence/actions/workflows/originfence-self-trial.yml/badge.svg)](https://github.com/ctrlzmydecisions/originfence/actions/workflows/originfence-self-trial.yml)
+
 Trust new dependency changes before they land.
 
 OriginFence reviews dependency changes in pull requests and tells you whether to trust them before merge.
 
-It looks only at the packages added or changed in a PR, then decides whether to `allow`, `warn`, `review`, or `block` them using repo policy, waivers, cryptographic provenance checks, malicious-package intelligence, and upstream registry signals.
+It looks only at the packages added or changed in a PR, then decides whether to `allow`, `warn`, `review`, or `block` them using repo policy, waivers, provenance checks, malicious-package intelligence, and upstream registry signals.
 
 It is built for teams that want trust decisions at merge time, in GitHub, with policy and waivers kept in the repo.
 
@@ -12,6 +15,15 @@ Status:
 - `alpha`
 - supported ecosystems: `npm`, `PyPI`
 - primary surface: `GitHub pull_request` and `merge_group` workflows
+- release tags publish an attested `originfence-action-<tag>.tgz` bundle built from the tagged source
+
+OriginFence is intentionally narrow:
+- GitHub pull-request and merge-queue workflows only
+- `npm` and `PyPI` only
+- changed dependency subjects only, not historical inventory debt
+- merge-time trust decisions, not dependency updates, vulnerability triage, or package proxying
+
+This repo dogfoods OriginFence on its own pull requests in `observe` mode via [`.github/workflows/originfence-self-trial.yml`](./.github/workflows/originfence-self-trial.yml).
 
 ## What It Does
 
@@ -79,12 +91,12 @@ jobs:
 
     steps:
       - name: Checkout merge candidate
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           fetch-depth: 2
 
       - name: Restore OriginFence cache
-        uses: actions/cache/restore@v4
+        uses: actions/cache/restore@v5
         with:
           path: .originfence/cache
           key: ${{ runner.os }}-originfence-${{ github.repository }}-${{ github.ref_name || github.ref }}-${{ github.sha }}
@@ -104,7 +116,7 @@ jobs:
 
       - name: Upload OriginFence artifacts
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: originfence-report-${{ github.run_id }}-${{ github.job }}
           path: |
@@ -113,7 +125,7 @@ jobs:
 
       - name: Save OriginFence cache
         if: always()
-        uses: actions/cache/save@v4
+        uses: actions/cache/save@v5
         with:
           path: .originfence/cache
           key: ${{ runner.os }}-originfence-${{ github.repository }}-${{ github.ref_name || github.ref }}-${{ github.sha }}
@@ -122,6 +134,27 @@ jobs:
 Reference examples:
 - [`examples/repo/.github/workflows/originfence-required-check.yml`](./examples/repo/.github/workflows/originfence-required-check.yml)
 - [`.github/workflows/originfence-reusable.yml`](./.github/workflows/originfence-reusable.yml)
+
+## Release Integrity
+
+GitHub Actions consume committed JavaScript bundles, so OriginFence still ships the Action as prebuilt bundled JavaScript at each tag. The release process now reduces that trust gap in three ways:
+- CI fails if [`bundle/github-action`](./bundle/github-action) drifts from the TypeScript source
+- published releases rebuild the Action from the tagged commit before packaging it
+- each release uploads an attested `originfence-action-<tag>.tgz` bundle plus a `SHA256SUMS.txt` file
+
+The attested release bundle is for verification. Consumers still install OriginFence the normal GitHub Action way:
+
+```yaml
+- uses: ctrlzmydecisions/originfence@v0
+```
+
+You can verify a release bundle with GitHub CLI:
+
+```bash
+gh release download v0.1.2-alpha -R ctrlzmydecisions/originfence -p 'originfence-action-*.tgz' -p 'SHA256SUMS.txt'
+sha256sum --check SHA256SUMS.txt
+gh attestation verify originfence-action-v0.1.2-alpha.tgz -R ctrlzmydecisions/originfence
+```
 
 ## How It Decides
 
@@ -188,7 +221,6 @@ In `observe` mode, OriginFence keeps the underlying decision in the report and h
 - OriginFence is a PR gate, not a transparent package proxy.
 - Python support covers common `requirements.txt` specifiers, include files, direct references, and editable VCS entries. `uv.lock` still gives OriginFence the strongest exact-resolution path.
 - Provenance verification is strongest for exact releases. For Python, `uv.lock` or tightly pinned `requirements.txt` gives OriginFence the cleanest evidence path.
-- The repository ships the Action as prebuilt bundled JavaScript; npm package publishing is not set up yet.
 
 ## Developing
 

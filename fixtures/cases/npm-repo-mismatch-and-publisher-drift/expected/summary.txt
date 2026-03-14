@@ -1,0 +1,7 @@
+Decision: failure
+Changed subjects: 1
+Blocked: 0  Review: 1  Warn: 0  Allow: 0
+
+[review] odd-lib@3.1.0
+  code: PUBLISHER_IDENTITY_DRIFT
+  next: Confirm that the new publisher, workflow, or repository is expected.

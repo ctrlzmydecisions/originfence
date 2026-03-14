@@ -1,0 +1,82 @@
+{
+  "schema_version": "1",
+  "generated_at": "2026-03-13T12:00:00Z",
+  "tool_version": "0.1.0",
+  "status": "failure",
+  "decision": "review",
+  "summary": "1 changed subject(s): 0 blocked, 1 review, 0 warn, 0 allow.",
+  "counts": {
+    "changed_subjects": 1,
+    "allow": 0,
+    "warn": 0,
+    "review": 1,
+    "block": 0
+  },
+  "paths": {
+    "base": "/Users/nsatyakrishna/Code/OriginFence/fixtures/cases/pypi-direct-url-expired-waiver/base",
+    "head": "/Users/nsatyakrishna/Code/OriginFence/fixtures/cases/pypi-direct-url-expired-waiver/head"
+  },
+  "policy": {
+    "source": "builtin:default",
+    "checksum": "61d8c0dfa5e6e8a9cad63f5e2f9a4ced7fe8e1ef21abed9b0d4893e6632574f8",
+    "waivers_file": ".originfence/waivers.yaml"
+  },
+  "unsupported_files": [],
+  "results": [
+    {
+      "schema_version": "1",
+      "subject": {
+        "ecosystem": "pypi",
+        "name": "internal-tooling-lib",
+        "version": "https://packages.example.com/internal-tooling-lib-1.0.0.tar.gz",
+        "source_type": "direct_url",
+        "manifest_path": "requirements.txt",
+        "lockfile_path": "requirements.txt",
+        "top_level": true
+      },
+      "base_decision": "review",
+      "effective_decision": "review",
+      "waived": false,
+      "summary": "internal-tooling-lib@https://packages.example.com/internal-tooling-lib-1.0.0.tar.gz is review because internal-tooling-lib@https://packages.example.com/internal-tooling-lib-1.0.0.tar.gz is introduced from a direct URL instead of an approved registry.",
+      "reasons": [
+        {
+          "code": "DIRECT_URL_SOURCE",
+          "severity": "high",
+          "decision": "review",
+          "message": "internal-tooling-lib@https://packages.example.com/internal-tooling-lib-1.0.0.tar.gz is introduced from a direct URL instead of an approved registry.",
+          "evidence_refs": [
+            "ev1"
+          ],
+          "waivable": true
+        }
+      ],
+      "evidence": [
+        {
+          "id": "ev1",
+          "source": "resolver",
+          "kind": "policy_rule",
+          "ref": "https://packages.example.com/internal-tooling-lib-1.0.0.tar.gz"
+        },
+        {
+          "id": "ev2",
+          "source": "pypi_json_api",
+          "kind": "registry_metadata",
+          "ref": "internal-tooling-lib@https://packages.example.com/internal-tooling-lib-1.0.0.tar.gz",
+          "fetched_at": "2026-03-13T12:00:00Z"
+        }
+      ],
+      "waivers_applied": [],
+      "next_action": {
+        "kind": "move_to_registry",
+        "summary": "Move the dependency to an approved registry or justify the exception."
+      },
+      "evaluation_meta": {
+        "evaluated_at": "2026-03-13T12:00:00Z",
+        "tool_version": "0.1.0",
+        "hard_signal_state": "fresh",
+        "soft_signal_state": "fresh",
+        "stale_evidence_refs": []
+      }
+    }
+  ]
+}

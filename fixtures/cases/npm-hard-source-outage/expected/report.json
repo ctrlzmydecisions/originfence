@@ -1,0 +1,91 @@
+{
+  "schema_version": "1",
+  "generated_at": "2026-03-13T12:00:00Z",
+  "tool_version": "0.1.0",
+  "status": "failure",
+  "decision": "block",
+  "summary": "1 changed subject(s): 1 blocked, 0 review, 0 warn, 0 allow.",
+  "counts": {
+    "changed_subjects": 1,
+    "allow": 0,
+    "warn": 0,
+    "review": 0,
+    "block": 1
+  },
+  "paths": {
+    "base": "/Users/nsatyakrishna/Code/OriginFence/fixtures/cases/npm-hard-source-outage/base",
+    "head": "/Users/nsatyakrishna/Code/OriginFence/fixtures/cases/npm-hard-source-outage/head"
+  },
+  "policy": {
+    "source": "builtin:default",
+    "checksum": "61d8c0dfa5e6e8a9cad63f5e2f9a4ced7fe8e1ef21abed9b0d4893e6632574f8",
+    "waivers_file": ".originfence/waivers.yaml"
+  },
+  "unsupported_files": [],
+  "results": [
+    {
+      "schema_version": "1",
+      "subject": {
+        "ecosystem": "npm",
+        "name": "flaky-lib",
+        "version": "1.0.0",
+        "source_type": "registry",
+        "manifest_path": "package.json",
+        "lockfile_path": "package-lock.json",
+        "top_level": true
+      },
+      "base_decision": "block",
+      "effective_decision": "block",
+      "waived": false,
+      "summary": "flaky-lib@1.0.0 is block because a required hard-signal source was unavailable while evaluating flaky-lib@1.0.0.",
+      "reasons": [
+        {
+          "code": "HARD_SIGNAL_SOURCE_UNAVAILABLE",
+          "severity": "high",
+          "decision": "block",
+          "message": "A required hard-signal source was unavailable while evaluating flaky-lib@1.0.0.",
+          "evidence_refs": [
+            "ev2"
+          ],
+          "waivable": false
+        },
+        {
+          "code": "SOFT_SIGNAL_SOURCE_UNAVAILABLE",
+          "severity": "medium",
+          "decision": "warn",
+          "message": "A soft-signal source was unavailable while evaluating flaky-lib@1.0.0.",
+          "evidence_refs": [
+            "ev1"
+          ],
+          "waivable": false
+        }
+      ],
+      "evidence": [
+        {
+          "id": "ev1",
+          "source": "soft_signal_source",
+          "kind": "cache_meta",
+          "ref": "flaky-lib"
+        },
+        {
+          "id": "ev2",
+          "source": "hard_signal_source",
+          "kind": "cache_meta",
+          "ref": "flaky-lib"
+        }
+      ],
+      "waivers_applied": [],
+      "next_action": {
+        "kind": "retry_or_refresh_cache",
+        "summary": "Retry after the source recovers or use a fresh trusted cache."
+      },
+      "evaluation_meta": {
+        "evaluated_at": "2026-03-13T12:00:00Z",
+        "tool_version": "0.1.0",
+        "hard_signal_state": "missing",
+        "soft_signal_state": "missing",
+        "stale_evidence_refs": []
+      }
+    }
+  ]
+}

@@ -1,0 +1,42 @@
+name: OriginFence Self Trial
+
+on:
+  pull_request:
+  merge_group:
+    types:
+      - checks_requested
+
+permissions:
+  contents: read
+  pull-requests: write
+  issues: write
+
+jobs:
+  originfence:
+    name: originfence
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout merge candidate
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+
+      - name: Run OriginFence
+        id: originfence
+        uses: ./
+        with:
+          write-job-summary: "true"
+          enforcement-mode: observe
+          pr-comment: "true"
+          comment-mode: review_and_block
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Upload OriginFence report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: originfence-report-${{ github.run_id }}-${{ github.job }}
+          path: |
+            ${{ steps.originfence.outputs.report-path }}
+            ${{ steps.originfence.outputs.summary-path }}

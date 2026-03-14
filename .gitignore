@@ -1,0 +1,11 @@
+.DS_Store
+node_modules
+dist/
+/.originfence
+.codex/
+.agents/
+AGENTS.md
+docs/
+.tmp/
+.tmp-tests*
+.npm-cache/

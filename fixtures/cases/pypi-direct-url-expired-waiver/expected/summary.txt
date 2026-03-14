@@ -1,0 +1,7 @@
+Decision: failure
+Changed subjects: 1
+Blocked: 0  Review: 1  Warn: 0  Allow: 0
+
+[review] internal-tooling-lib@https://packages.example.com/internal-tooling-lib-1.0.0.tar.gz
+  code: DIRECT_URL_SOURCE
+  next: Move the dependency to an approved registry or justify the exception.

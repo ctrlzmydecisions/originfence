@@ -1,0 +1,5 @@
+# OriginFence waivers template
+# Add explicit, time-bounded exceptions here when policy allows.
+
+version: 1
+waivers: []

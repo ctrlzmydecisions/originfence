@@ -1,0 +1,14 @@
+version: 1
+waivers:
+  - id: OF-2026-1001
+    owner: team-platform
+    justification: Internal package is still being moved to the private registry.
+    created_at: 2026-03-13T12:00:00Z
+    expires_at: 2026-03-27T12:00:00Z
+    reason_codes:
+      - VCS_SOURCE
+    effect: downgrade_to_warn
+    scope:
+      ecosystem: pypi
+      package: internal-tooling-lib
+      version: git+https://github.com/our-org/internal-tooling-lib.git@9f2e1d4

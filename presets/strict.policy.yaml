@@ -1,0 +1,28 @@
+# OriginFence preset: strict
+# Stricter rollout with provenance required for all supported registry packages and stronger soft-signal review.
+
+version: 1
+sources:
+  allow:
+    - registry.npmjs.org
+    - npmjs.org
+    - pypi.org
+    - files.pythonhosted.org
+  deny_direct_urls: true
+provenance:
+  npm:
+    require_for:
+      - "*"
+    missing_action: block
+  pypi:
+    require_for:
+      - "*"
+    missing_action: block
+malicious_packages:
+  action: block
+soft_signals:
+  recent_package_age_days: 7
+  maintainer_set_change: review
+  publisher_identity_drift: review
+waivers:
+  file: .originfence/waivers.yaml

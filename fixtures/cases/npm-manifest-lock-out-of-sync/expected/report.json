@@ -1,0 +1,75 @@
+{
+  "schema_version": "1",
+  "generated_at": "2026-03-13T12:00:00Z",
+  "tool_version": "0.1.0",
+  "status": "failure",
+  "decision": "block",
+  "summary": "1 changed subject(s): 1 blocked, 0 review, 0 warn, 0 allow.",
+  "counts": {
+    "changed_subjects": 1,
+    "allow": 0,
+    "warn": 0,
+    "review": 0,
+    "block": 1
+  },
+  "paths": {
+    "base": "/Users/nsatyakrishna/Code/OriginFence/fixtures/cases/npm-manifest-lock-out-of-sync/base",
+    "head": "/Users/nsatyakrishna/Code/OriginFence/fixtures/cases/npm-manifest-lock-out-of-sync/head"
+  },
+  "policy": {
+    "source": "builtin:default",
+    "checksum": "61d8c0dfa5e6e8a9cad63f5e2f9a4ced7fe8e1ef21abed9b0d4893e6632574f8",
+    "waivers_file": ".originfence/waivers.yaml"
+  },
+  "unsupported_files": [],
+  "results": [
+    {
+      "schema_version": "1",
+      "subject": {
+        "ecosystem": "npm",
+        "name": "package.json -> package-lock.json",
+        "version": null,
+        "source_type": "unknown",
+        "manifest_path": "package.json",
+        "lockfile_path": "package-lock.json",
+        "top_level": true
+      },
+      "base_decision": "block",
+      "effective_decision": "block",
+      "waived": false,
+      "summary": "package.json changed without a matching package-lock.json update.",
+      "reasons": [
+        {
+          "code": "MANIFEST_LOCKFILE_OUT_OF_SYNC",
+          "severity": "high",
+          "decision": "block",
+          "message": "package.json changed without a matching package-lock.json update.",
+          "evidence_refs": [
+            "ev1"
+          ],
+          "waivable": true
+        }
+      ],
+      "evidence": [
+        {
+          "id": "ev1",
+          "source": "resolver",
+          "kind": "policy_rule",
+          "ref": "MANIFEST_LOCKFILE_OUT_OF_SYNC:package.json"
+        }
+      ],
+      "waivers_applied": [],
+      "next_action": {
+        "kind": "refresh_lockfile",
+        "summary": "Re-resolve and commit the correct lockfile."
+      },
+      "evaluation_meta": {
+        "evaluated_at": "2026-03-13T12:00:00Z",
+        "tool_version": "0.1.0",
+        "hard_signal_state": "fresh",
+        "soft_signal_state": "fresh",
+        "stale_evidence_refs": []
+      }
+    }
+  ]
+}

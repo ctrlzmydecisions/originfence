@@ -1,0 +1,112 @@
+name: OriginFence Reusable Workflow
+
+on:
+  workflow_call:
+    inputs:
+      base-rev:
+        required: false
+        type: string
+      policy-path:
+        required: false
+        type: string
+      baseline-policy-path:
+        required: false
+        type: string
+      waivers-path:
+        required: false
+        type: string
+      json-out:
+        required: false
+        type: string
+      summary-out:
+        required: false
+        type: string
+      write-job-summary:
+        required: false
+        type: boolean
+        default: true
+      cache-dir:
+        required: false
+        type: string
+      refresh:
+        required: false
+        type: boolean
+        default: false
+      enforcement-mode:
+        required: false
+        type: string
+        default: enforce
+      pr-comment:
+        required: false
+        type: boolean
+        default: false
+      comment-mode:
+        required: false
+        type: string
+        default: review_and_block
+    secrets:
+      github-token:
+        required: false
+    outputs:
+      status:
+        value: ${{ jobs.originfence.outputs.status }}
+      decision:
+        value: ${{ jobs.originfence.outputs.decision }}
+      report-path:
+        value: ${{ jobs.originfence.outputs.report-path }}
+      summary-path:
+        value: ${{ jobs.originfence.outputs.summary-path }}
+      comment-state:
+        value: ${{ jobs.originfence.outputs.comment-state }}
+
+jobs:
+  originfence:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
+      issues: write
+    outputs:
+      status: ${{ steps.originfence.outputs.status }}
+      decision: ${{ steps.originfence.outputs.decision }}
+      report-path: ${{ steps.originfence.outputs.report-path }}
+      summary-path: ${{ steps.originfence.outputs.summary-path }}
+      comment-state: ${{ steps.originfence.outputs.comment-state }}
+    steps:
+      - name: Checkout caller repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+
+      - id: source
+        name: Resolve OriginFence source repository
+        shell: bash
+        run: |
+          workflow_ref="${{ github.workflow_ref }}"
+          echo "repo=${workflow_ref%%/.github/workflows/*}" >> "$GITHUB_OUTPUT"
+          echo "ref=${workflow_ref##*@}" >> "$GITHUB_OUTPUT"
+
+      - name: Checkout OriginFence source repository
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ steps.source.outputs.repo }}
+          ref: ${{ steps.source.outputs.ref }}
+          path: .originfence/action-repo
+
+      - id: originfence
+        name: Run OriginFence
+        uses: ./.originfence/action-repo
+        with:
+          base-rev: ${{ inputs.base-rev }}
+          policy-path: ${{ inputs.policy-path }}
+          baseline-policy-path: ${{ inputs.baseline-policy-path }}
+          waivers-path: ${{ inputs.waivers-path }}
+          json-out: ${{ inputs.json-out }}
+          summary-out: ${{ inputs.summary-out }}
+          write-job-summary: ${{ inputs.write-job-summary }}
+          cache-dir: ${{ inputs.cache-dir }}
+          refresh: ${{ inputs.refresh }}
+          enforcement-mode: ${{ inputs.enforcement-mode }}
+          pr-comment: ${{ inputs.pr-comment }}
+          comment-mode: ${{ inputs.comment-mode }}
+          github-token: ${{ secrets.github-token }}

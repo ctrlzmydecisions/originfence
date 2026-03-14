@@ -1,0 +1,83 @@
+{
+  "schema_version": "1",
+  "generated_at": "2026-03-13T12:00:00Z",
+  "tool_version": "0.1.0",
+  "status": "failure",
+  "decision": "review",
+  "summary": "1 changed subject(s): 0 blocked, 1 review, 0 warn, 0 allow.",
+  "counts": {
+    "changed_subjects": 1,
+    "allow": 0,
+    "warn": 0,
+    "review": 1,
+    "block": 0
+  },
+  "paths": {
+    "base": "/Users/nsatyakrishna/Code/OriginFence/fixtures/cases/npm-repo-mismatch-and-publisher-drift/base",
+    "head": "/Users/nsatyakrishna/Code/OriginFence/fixtures/cases/npm-repo-mismatch-and-publisher-drift/head"
+  },
+  "policy": {
+    "source": "builtin:default",
+    "checksum": "61d8c0dfa5e6e8a9cad63f5e2f9a4ced7fe8e1ef21abed9b0d4893e6632574f8",
+    "waivers_file": ".originfence/waivers.yaml"
+  },
+  "unsupported_files": [],
+  "results": [
+    {
+      "schema_version": "1",
+      "subject": {
+        "ecosystem": "npm",
+        "name": "odd-lib",
+        "version": "3.1.0",
+        "source_type": "registry",
+        "manifest_path": "package.json",
+        "lockfile_path": "package-lock.json",
+        "top_level": true
+      },
+      "base_decision": "review",
+      "effective_decision": "review",
+      "waived": false,
+      "summary": "odd-lib@3.1.0 is review because odd-lib@3.1.0 was published by a different identity than recent trusted history.",
+      "reasons": [
+        {
+          "code": "PUBLISHER_IDENTITY_DRIFT",
+          "severity": "medium",
+          "decision": "review",
+          "message": "odd-lib@3.1.0 was published by a different identity than recent trusted history.",
+          "evidence_refs": [
+            "ev2"
+          ],
+          "waivable": true
+        }
+      ],
+      "evidence": [
+        {
+          "id": "ev1",
+          "source": "npm_registry",
+          "kind": "registry_metadata",
+          "ref": "odd-lib@3.1.0",
+          "fetched_at": "2026-03-13T12:00:00Z"
+        },
+        {
+          "id": "ev2",
+          "source": "ptg_snapshot",
+          "kind": "cache_meta",
+          "ref": "unexpected-publisher",
+          "fetched_at": "2026-03-13T12:00:00Z"
+        }
+      ],
+      "waivers_applied": [],
+      "next_action": {
+        "kind": "confirm_publisher",
+        "summary": "Confirm that the new publisher, workflow, or repository is expected."
+      },
+      "evaluation_meta": {
+        "evaluated_at": "2026-03-13T12:00:00Z",
+        "tool_version": "0.1.0",
+        "hard_signal_state": "fresh",
+        "soft_signal_state": "fresh",
+        "stale_evidence_refs": []
+      }
+    }
+  ]
+}

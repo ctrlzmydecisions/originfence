@@ -1,0 +1,82 @@
+{
+  "schema_version": "1",
+  "generated_at": "2026-03-13T12:00:00Z",
+  "tool_version": "0.1.0",
+  "status": "failure",
+  "decision": "review",
+  "summary": "1 changed subject(s): 0 blocked, 1 review, 0 warn, 0 allow.",
+  "counts": {
+    "changed_subjects": 1,
+    "allow": 0,
+    "warn": 0,
+    "review": 1,
+    "block": 0
+  },
+  "paths": {
+    "base": "/Users/nsatyakrishna/Code/OriginFence/fixtures/cases/pypi-missing-provenance/base",
+    "head": "/Users/nsatyakrishna/Code/OriginFence/fixtures/cases/pypi-missing-provenance/head"
+  },
+  "policy": {
+    "source": "builtin:default,/Users/nsatyakrishna/Code/OriginFence/fixtures/cases/pypi-missing-provenance/policy.yaml",
+    "checksum": "dac3f6886d788c2751b7afe8737f174975cd29c50f149f1023c7a97d46e9bdc3",
+    "waivers_file": ".originfence/waivers.yaml"
+  },
+  "unsupported_files": [],
+  "results": [
+    {
+      "schema_version": "1",
+      "subject": {
+        "ecosystem": "pypi",
+        "name": "critical-lib",
+        "version": "1.0.0",
+        "source_type": "registry",
+        "manifest_path": "requirements.txt",
+        "lockfile_path": "requirements.txt",
+        "top_level": true
+      },
+      "base_decision": "review",
+      "effective_decision": "review",
+      "waived": false,
+      "summary": "critical-lib@1.0.0 is review because critical-lib@1.0.0 is missing required provenance for the active policy.",
+      "reasons": [
+        {
+          "code": "MISSING_PROVENANCE",
+          "severity": "medium",
+          "decision": "review",
+          "message": "critical-lib@1.0.0 is missing required provenance for the active policy.",
+          "evidence_refs": [
+            "ev2"
+          ],
+          "waivable": true
+        }
+      ],
+      "evidence": [
+        {
+          "id": "ev1",
+          "source": "pypi_json_api",
+          "kind": "registry_metadata",
+          "ref": "critical-lib@1.0.0",
+          "fetched_at": "2026-03-13T12:00:00Z"
+        },
+        {
+          "id": "ev2",
+          "source": "policy",
+          "kind": "policy_rule",
+          "ref": "required_provenance:pypi:critical-lib"
+        }
+      ],
+      "waivers_applied": [],
+      "next_action": {
+        "kind": "require_provenance_or_waive",
+        "summary": "Waive temporarily or use a publisher with supported provenance."
+      },
+      "evaluation_meta": {
+        "evaluated_at": "2026-03-13T12:00:00Z",
+        "tool_version": "0.1.0",
+        "hard_signal_state": "fresh",
+        "soft_signal_state": "fresh",
+        "stale_evidence_refs": []
+      }
+    }
+  ]
+}

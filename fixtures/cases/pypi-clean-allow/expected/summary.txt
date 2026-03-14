@@ -1,0 +1,7 @@
+Decision: success
+Changed subjects: 1
+Blocked: 0  Review: 0  Warn: 0  Allow: 1
+
+[allow] urllib3@2.2.3
+  code: none
+  next: No action required.

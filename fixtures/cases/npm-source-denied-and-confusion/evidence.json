@@ -1,0 +1,15 @@
+{
+  "subjects": [
+    {
+      "match": {
+        "ecosystem": "npm",
+        "name": "weird-pkg",
+        "version": "9.9.9"
+      },
+      "registry": {
+        "registry_host": "evil.example.com",
+        "published_at": "2025-02-01T00:00:00Z"
+      }
+    }
+  ]
+}

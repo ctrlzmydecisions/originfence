@@ -1,0 +1,8 @@
+Decision: success
+Changed subjects: 1
+Blocked: 0  Review: 0  Warn: 1  Allow: 0
+
+[warn] internal-tooling-lib@git+https://github.com/our-org/internal-tooling-lib.git@9f2e1d4
+  code: VCS_SOURCE
+  waived: OF-2026-0002 (team-platform) until 2026-03-27T00:00:00Z from review
+  next: Track waiver OF-2026-0002 until expiry or remove the dependency.

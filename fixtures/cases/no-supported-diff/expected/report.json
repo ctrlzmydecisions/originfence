@@ -1,0 +1,26 @@
+{
+  "schema_version": "1",
+  "generated_at": "2026-03-13T12:00:00Z",
+  "tool_version": "0.1.0",
+  "status": "neutral",
+  "decision": "neutral",
+  "summary": "No supported dependency changes were detected.",
+  "counts": {
+    "changed_subjects": 0,
+    "allow": 0,
+    "warn": 0,
+    "review": 0,
+    "block": 0
+  },
+  "paths": {
+    "base": "/Users/nsatyakrishna/Code/OriginFence/fixtures/cases/no-supported-diff/base",
+    "head": "/Users/nsatyakrishna/Code/OriginFence/fixtures/cases/no-supported-diff/head"
+  },
+  "policy": {
+    "source": "builtin:default",
+    "checksum": "61d8c0dfa5e6e8a9cad63f5e2f9a4ced7fe8e1ef21abed9b0d4893e6632574f8",
+    "waivers_file": ".originfence/waivers.yaml"
+  },
+  "unsupported_files": [],
+  "results": []
+}

@@ -1,0 +1,16 @@
+{
+  "subjects": [
+    {
+      "match": {
+        "ecosystem": "npm",
+        "name": "flaky-lib",
+        "version": "1.0.0"
+      },
+      "availability": {
+        "hard_signal_source_available": false,
+        "soft_signal_source_available": false,
+        "fresh_cache_for_hard_signal": false
+      }
+    }
+  ]
+}

@@ -1,0 +1,23 @@
+name: OriginFence (Reusable Workflow)
+
+on:
+  pull_request:
+  merge_group:
+    types:
+      - checks_requested
+
+permissions:
+  contents: read
+  pull-requests: write
+  issues: write
+
+jobs:
+  originfence:
+    uses: your-org/originfence/.github/workflows/originfence-reusable.yml@main
+    secrets:
+      github-token: ${{ secrets.GITHUB_TOKEN }}
+    with:
+      enforcement-mode: observe
+      write-job-summary: true
+      pr-comment: true
+      comment-mode: review_and_block

@@ -1,0 +1,8 @@
+[
+  {
+    "ecosystem": "npm",
+    "name": "evil-pkg",
+    "version": "1.4.2",
+    "ref": "fixtures:evil-pkg@1.4.2"
+  }
+]

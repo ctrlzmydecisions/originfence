@@ -1,0 +1,20 @@
+{
+  "subjects": [
+    {
+      "match": {
+        "ecosystem": "npm",
+        "name": "cached-lib",
+        "version": "2.0.0"
+      },
+      "registry": {
+        "registry_host": "registry.npmjs.org",
+        "published_at": "2025-02-01T00:00:00Z"
+      },
+      "availability": {
+        "hard_signal_source_available": false,
+        "soft_signal_source_available": true,
+        "fresh_cache_for_hard_signal": true
+      }
+    }
+  ]
+}

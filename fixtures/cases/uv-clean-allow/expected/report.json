@@ -1,0 +1,65 @@
+{
+  "schema_version": "1",
+  "generated_at": "2026-03-13T12:00:00Z",
+  "tool_version": "0.1.0",
+  "status": "success",
+  "decision": "allow",
+  "summary": "1 changed subject(s): 0 blocked, 0 review, 0 warn, 1 allow.",
+  "counts": {
+    "changed_subjects": 1,
+    "allow": 1,
+    "warn": 0,
+    "review": 0,
+    "block": 0
+  },
+  "paths": {
+    "base": "/Users/nsatyakrishna/Code/OriginFence/fixtures/cases/uv-clean-allow/base",
+    "head": "/Users/nsatyakrishna/Code/OriginFence/fixtures/cases/uv-clean-allow/head"
+  },
+  "policy": {
+    "source": "builtin:default",
+    "checksum": "61d8c0dfa5e6e8a9cad63f5e2f9a4ced7fe8e1ef21abed9b0d4893e6632574f8",
+    "waivers_file": ".originfence/waivers.yaml"
+  },
+  "unsupported_files": [],
+  "results": [
+    {
+      "schema_version": "1",
+      "subject": {
+        "ecosystem": "pypi",
+        "name": "requests",
+        "version": "2.32.0",
+        "source_type": "registry",
+        "manifest_path": "pyproject.toml",
+        "lockfile_path": "uv.lock",
+        "top_level": true
+      },
+      "base_decision": "allow",
+      "effective_decision": "allow",
+      "waived": false,
+      "summary": "requests@2.32.0 is allowed.",
+      "reasons": [],
+      "evidence": [
+        {
+          "id": "ev1",
+          "source": "pypi_json_api",
+          "kind": "registry_metadata",
+          "ref": "requests@2.32.0",
+          "fetched_at": "2026-03-13T12:00:00Z"
+        }
+      ],
+      "waivers_applied": [],
+      "next_action": {
+        "kind": "none",
+        "summary": "No action required."
+      },
+      "evaluation_meta": {
+        "evaluated_at": "2026-03-13T12:00:00Z",
+        "tool_version": "0.1.0",
+        "hard_signal_state": "fresh",
+        "soft_signal_state": "fresh",
+        "stale_evidence_refs": []
+      }
+    }
+  ]
+}

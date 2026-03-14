@@ -1,0 +1,20 @@
+{
+  "subjects": [
+    {
+      "match": {
+        "ecosystem": "npm",
+        "name": "lodash",
+        "version": "4.17.21"
+      },
+      "registry": {
+        "registry_host": "registry.npmjs.org",
+        "published_at": "2025-01-01T00:00:00Z",
+        "repository": "https://github.com/lodash/lodash",
+        "maintainers": [
+          "lodash-team"
+        ],
+        "publisher_identity": "lodash-bot"
+      }
+    }
+  ]
+}

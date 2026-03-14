@@ -1,0 +1,7 @@
+Decision: failure
+Changed subjects: 1
+Blocked: 0  Review: 1  Warn: 0  Allow: 0
+
+[review] critical-lib@1.0.0
+  code: MISSING_PROVENANCE
+  next: Waive temporarily or use a publisher with supported provenance.

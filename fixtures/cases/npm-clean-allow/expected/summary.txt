@@ -1,0 +1,7 @@
+Decision: success
+Changed subjects: 1
+Blocked: 0  Review: 0  Warn: 0  Allow: 1
+
+[allow] lodash@4.17.21
+  code: none
+  next: No action required.

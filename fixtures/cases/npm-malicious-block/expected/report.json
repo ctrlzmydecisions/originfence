@@ -1,0 +1,83 @@
+{
+  "schema_version": "1",
+  "generated_at": "2026-03-13T12:00:00Z",
+  "tool_version": "0.1.0",
+  "status": "failure",
+  "decision": "block",
+  "summary": "1 changed subject(s): 1 blocked, 0 review, 0 warn, 0 allow.",
+  "counts": {
+    "changed_subjects": 1,
+    "allow": 0,
+    "warn": 0,
+    "review": 0,
+    "block": 1
+  },
+  "paths": {
+    "base": "/Users/nsatyakrishna/Code/OriginFence/fixtures/cases/npm-malicious-block/base",
+    "head": "/Users/nsatyakrishna/Code/OriginFence/fixtures/cases/npm-malicious-block/head"
+  },
+  "policy": {
+    "source": "builtin:default",
+    "checksum": "61d8c0dfa5e6e8a9cad63f5e2f9a4ced7fe8e1ef21abed9b0d4893e6632574f8",
+    "waivers_file": ".originfence/waivers.yaml"
+  },
+  "unsupported_files": [],
+  "results": [
+    {
+      "schema_version": "1",
+      "subject": {
+        "ecosystem": "npm",
+        "name": "evil-pkg",
+        "version": "1.4.2",
+        "source_type": "registry",
+        "manifest_path": "package.json",
+        "lockfile_path": "package-lock.json",
+        "top_level": true
+      },
+      "base_decision": "block",
+      "effective_decision": "block",
+      "waived": false,
+      "summary": "evil-pkg@1.4.2 is block because evil-pkg@1.4.2 matched a known malicious package entry.",
+      "reasons": [
+        {
+          "code": "KNOWN_MALICIOUS",
+          "severity": "critical",
+          "decision": "block",
+          "message": "evil-pkg@1.4.2 matched a known malicious package entry.",
+          "evidence_refs": [
+            "ev1"
+          ],
+          "waivable": false
+        }
+      ],
+      "evidence": [
+        {
+          "id": "ev1",
+          "source": "malicious_packages_feed",
+          "kind": "feed_entry",
+          "ref": "fixtures:evil-pkg@1.4.2",
+          "fetched_at": "2026-03-13T12:00:00Z"
+        },
+        {
+          "id": "ev2",
+          "source": "npm_registry",
+          "kind": "registry_metadata",
+          "ref": "evil-pkg@1.4.2",
+          "fetched_at": "2026-03-13T12:00:00Z"
+        }
+      ],
+      "waivers_applied": [],
+      "next_action": {
+        "kind": "remove_dependency",
+        "summary": "Remove the dependency immediately."
+      },
+      "evaluation_meta": {
+        "evaluated_at": "2026-03-13T12:00:00Z",
+        "tool_version": "0.1.0",
+        "hard_signal_state": "fresh",
+        "soft_signal_state": "fresh",
+        "stale_evidence_refs": []
+      }
+    }
+  ]
+}

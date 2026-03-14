@@ -1,0 +1,23 @@
+{
+  "subjects": [
+    {
+      "match": {
+        "ecosystem": "npm",
+        "name": "fresh-lib",
+        "version": "0.2.0"
+      },
+      "registry": {
+        "registry_host": "registry.npmjs.org",
+        "published_at": "2026-03-10T00:00:00Z",
+        "repository": "https://github.com/example/fresh-lib",
+        "maintainers": [
+          "new-owner"
+        ],
+        "publisher_identity": "new-owner"
+      },
+      "signals": {
+        "maintainer_set_change": true
+      }
+    }
+  ]
+}

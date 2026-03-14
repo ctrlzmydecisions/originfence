@@ -2,6 +2,14 @@
 
 All notable changes to OriginFence should be recorded in this file.
 
+## 0.1.2-alpha - 2026-03-14
+
+Alpha patch release:
+- add a release workflow that rebuilds the tagged Action bundle, packages a deterministic release archive, and attests it with GitHub Artifact Attestations
+- make self-dogfooding visible from the README with workflow badges and a direct link to the repo's self-trial workflow
+- tighten the README positioning so OriginFence is described as a narrow GitHub PR trust gate instead of a broader platform
+- refresh the public workflow examples to the current GitHub Actions major versions used by the repo itself
+
 ## 0.1.1-alpha - 2026-03-14
 
 Alpha patch release:

@@ -18,12 +18,12 @@ jobs:
 
     steps:
       - name: Checkout merge candidate
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           fetch-depth: 2
 
       - name: Restore OriginFence cache
-        uses: actions/cache/restore@v4
+        uses: actions/cache/restore@v5
         with:
           path: .originfence/cache
           key: ${{ runner.os }}-originfence-${{ github.repository }}-${{ github.ref_name || github.ref }}-${{ github.sha }}
@@ -43,7 +43,7 @@ jobs:
 
       - name: Upload OriginFence report
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: originfence-report-${{ github.run_id }}-${{ github.job }}
           path: |
@@ -52,7 +52,7 @@ jobs:
 
       - name: Save OriginFence cache
         if: always()
-        uses: actions/cache/save@v4
+        uses: actions/cache/save@v5
         with:
           path: .originfence/cache
           key: ${{ runner.os }}-originfence-${{ github.repository }}-${{ github.ref_name || github.ref }}-${{ github.sha }}

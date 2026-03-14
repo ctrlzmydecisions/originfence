@@ -200,6 +200,7 @@ export interface SubjectEvidence {
   provenance?: {
     present: boolean;
     verified: boolean;
+    checked?: boolean;
     ref: string;
   };
   cache?: {
@@ -214,6 +215,7 @@ export interface SubjectEvidence {
     hard_signal_source_available?: boolean;
     soft_signal_source_available?: boolean;
     fresh_cache_for_hard_signal?: boolean;
+    provenance_verification_available?: boolean;
   };
 }
 

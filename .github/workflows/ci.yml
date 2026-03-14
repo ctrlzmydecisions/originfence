@@ -1,0 +1,56 @@
+name: CI
+
+on:
+  pull_request:
+  merge_group:
+    types:
+      - checks_requested
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Test
+        run: npm test
+
+      - name: Build packaged action
+        run: npm run build
+
+      - name: Verify committed bundle is up to date
+        shell: bash
+        run: |
+          if [[ -n "$(git status --porcelain -- bundle/github-action)" ]]; then
+            echo "Committed bundle is out of date. Run 'npm run build' and commit the generated files." >&2
+            git status --short -- bundle/github-action >&2
+            git diff -- bundle/github-action >&2 || true
+            exit 1
+          fi

@@ -76,6 +76,39 @@ function classifySource(spec: string | undefined | null): SourceType {
   return "registry";
 }
 
+function classifyNpmResolvedSource(resolved: string | undefined | null): SourceType {
+  if (!resolved) {
+    return "registry";
+  }
+
+  if (resolved.startsWith("git+") || resolved.startsWith("github:") || resolved.startsWith("git@")) {
+    return "vcs";
+  }
+
+  if (
+    resolved.startsWith("file:") ||
+    resolved.startsWith("link:") ||
+    resolved.startsWith("./") ||
+    resolved.startsWith("../") ||
+    resolved.startsWith("/")
+  ) {
+    return "file";
+  }
+
+  if (resolved.startsWith("http://") || resolved.startsWith("https://")) {
+    if (resolved.includes(".git")) {
+      return "vcs";
+    }
+
+    // package-lock.json stores the fetched artifact URL here for ordinary registry
+    // packages, so treat plain tarball downloads as registry resolutions unless a
+    // manifest or legacy lock entry declared a non-registry source explicitly.
+    return "registry";
+  }
+
+  return "registry";
+}
+
 function extractRegistryHost(spec: string | undefined | null): string | undefined {
   if (!spec) {
     return undefined;
@@ -145,7 +178,7 @@ function parseNpmLockSubjects(
 
       const topLevelSpec = topLevelSpecs.get(name);
       const sourceRef = topLevelSpec ?? metadata.resolved;
-      const sourceType = classifySource(sourceRef);
+      const sourceType = topLevelSpec ? classifySource(topLevelSpec) : classifyNpmResolvedSource(metadata.resolved);
 
       subjects.push({
         ecosystem: "npm",
@@ -166,8 +199,9 @@ function parseNpmLockSubjects(
   const walk = (dependencies: Record<string, PackageLockDependencyNode>, topLevel = false): void => {
     for (const [name, dependency] of Object.entries(dependencies)) {
       const topLevelSpec = topLevelSpecs.get(name);
-      const sourceRef = topLevelSpec ?? dependency.resolved;
-      const sourceType = classifySource(sourceRef);
+      const inferredDeclaredSpec = topLevelSpec ?? (classifySource(dependency.version) === "registry" ? undefined : dependency.version);
+      const sourceRef = inferredDeclaredSpec ?? dependency.resolved;
+      const sourceType = inferredDeclaredSpec ? classifySource(inferredDeclaredSpec) : classifyNpmResolvedSource(dependency.resolved);
 
       subjects.push({
         ecosystem: "npm",
@@ -191,67 +225,208 @@ function parseNpmLockSubjects(
   return subjects;
 }
 
-function parseRequirementLine(line: string): ResolvedDependency | null {
-  const trimmed = line.trim();
+function splitRequirementLines(content: string): string[] {
+  const lines = content.split(/\r?\n/u);
+  const merged: string[] = [];
+  let current = "";
 
-  if (!trimmed || trimmed.startsWith("#") || trimmed.startsWith("-")) {
-    return null;
+  for (const line of lines) {
+    const next = current.length > 0 ? `${current}${line.trimStart()}` : line;
+
+    if (next.trimEnd().endsWith("\\")) {
+      current = `${next.trimEnd().slice(0, -1)} `;
+      continue;
+    }
+
+    merged.push(next);
+    current = "";
   }
 
-  if (trimmed.includes(" @ ")) {
-    const [namePart = "", refPart = ""] = trimmed.split(" @ ", 2);
-    const sourceType = classifySource(refPart);
-
-    return {
-      ecosystem: "pypi",
-      name: namePart.trim(),
-      version: refPart.trim(),
-      source_type: sourceType,
-      manifest_path: "requirements.txt",
-      lockfile_path: "requirements.txt",
-      top_level: true,
-      source_ref: refPart.trim(),
-      registry_host: sourceType === "registry" ? "pypi.org" : extractRegistryHost(refPart.trim())
-    };
+  if (current.trim().length > 0) {
+    merged.push(current);
   }
 
-  if (trimmed.includes("==")) {
-    const [namePart = "", versionPart = ""] = trimmed.split("==", 2);
+  return merged;
+}
 
-    return {
-      ecosystem: "pypi",
-      name: namePart.trim(),
-      version: versionPart.trim(),
-      source_type: "registry",
-      manifest_path: "requirements.txt",
-      lockfile_path: "requirements.txt",
-      top_level: true,
-      source_ref: undefined,
-      registry_host: "pypi.org"
-    };
-  }
+function stripRequirementComment(line: string): string {
+  const commentIndex = line.search(/\s+#/u);
+  return (commentIndex >= 0 ? line.slice(0, commentIndex) : line).trim();
+}
 
+function normalizeRequirementName(rawName: string): string {
+  return rawName.trim().replace(/\[.*$/u, "");
+}
+
+function resolveIncludedRequirementsPath(currentPath: string, target: string): string {
+  const resolved = path.isAbsolute(target)
+    ? path.normalize(target)
+    : path.normalize(path.join(path.dirname(currentPath), target));
+
+  return resolved.replace(/^[./\\]+/u, "").split(path.sep).join("/");
+}
+
+function extractEggName(ref: string): string | null {
+  const match = ref.match(/[#&]egg=([^&]+)/u);
+  return match?.[1] ? normalizeRequirementName(match[1]) : null;
+}
+
+function buildRequirementSubject(
+  manifestPath: string,
+  name: string,
+  sourceType: SourceType,
+  options: {
+    version?: string | null;
+    sourceRef?: string;
+    registryHost?: string;
+  } = {}
+): ResolvedDependency {
   return {
     ecosystem: "pypi",
-    name: trimmed,
-    version: null,
-    source_type: "unknown",
-    manifest_path: "requirements.txt",
-    lockfile_path: "requirements.txt",
+    name,
+    version: options.version ?? null,
+    source_type: sourceType,
+    manifest_path: manifestPath,
+    lockfile_path: manifestPath,
     top_level: true,
-    source_ref: trimmed
+    source_ref: options.sourceRef,
+    registry_host: options.registryHost
   };
 }
 
-function parseRequirements(content: string | null): ResolvedDependency[] {
+function parseRequirementSpecLine(line: string, manifestPath: string): ResolvedDependency | null {
+  const trimmed = stripRequirementComment(line);
+
+  if (!trimmed || trimmed.startsWith("#")) {
+    return null;
+  }
+
+  const markerIndex = trimmed.indexOf(";");
+  const spec = markerIndex >= 0 ? trimmed.slice(0, markerIndex).trim() : trimmed;
+
+  if (!spec) {
+    return null;
+  }
+
+  const directReferenceMatch = spec.match(/^([A-Za-z0-9][A-Za-z0-9._-]*(?:\[[^\]]+\])?)\s*@\s*(.+)$/u);
+
+  if (directReferenceMatch) {
+    const rawName = directReferenceMatch[1] ?? "";
+    const refPart = directReferenceMatch[2] ?? "";
+    const normalizedRef = refPart.trim();
+    const sourceType = classifySource(normalizedRef);
+
+    return buildRequirementSubject(manifestPath, normalizeRequirementName(rawName), sourceType, {
+      version: sourceType === "registry" ? null : normalizedRef,
+      sourceRef: normalizedRef,
+      registryHost: sourceType === "registry" ? "pypi.org" : extractRegistryHost(normalizedRef)
+    });
+  }
+
+  if (spec.startsWith("git+") || spec.startsWith("http://") || spec.startsWith("https://") || spec.startsWith("file:")) {
+    const sourceType = classifySource(spec);
+    return buildRequirementSubject(manifestPath, extractEggName(spec) ?? spec, sourceType, {
+      sourceRef: trimmed,
+      registryHost: sourceType === "registry" ? "pypi.org" : extractRegistryHost(spec)
+    });
+  }
+
+  const exactMatch = spec.match(/^([A-Za-z0-9][A-Za-z0-9._-]*(?:\[[^\]]+\])?)\s*(===|==)\s*([^\s,]+)(?:.*)?$/u);
+
+  if (exactMatch) {
+    const rawName = exactMatch[1] ?? "";
+    const versionPart = exactMatch[3] ?? "";
+    return buildRequirementSubject(manifestPath, normalizeRequirementName(rawName), "registry", {
+      version: versionPart.trim(),
+      sourceRef: trimmed,
+      registryHost: "pypi.org"
+    });
+  }
+
+  const nameMatch = spec.match(/^([A-Za-z0-9][A-Za-z0-9._-]*(?:\[[^\]]+\])?)/u);
+
+  if (nameMatch) {
+    return buildRequirementSubject(manifestPath, normalizeRequirementName(nameMatch[1] ?? ""), "registry", {
+      sourceRef: trimmed,
+      registryHost: "pypi.org"
+    });
+  }
+
+  return buildRequirementSubject(manifestPath, trimmed, "unknown", {
+    sourceRef: trimmed
+  });
+}
+
+async function parseRequirementsFile(
+  repoPath: string,
+  relativePath: string,
+  visited: Set<string>
+): Promise<ResolvedDependency[]> {
+  const normalizedPath = relativePath.split(path.sep).join("/");
+
+  if (visited.has(normalizedPath)) {
+    return [];
+  }
+
+  visited.add(normalizedPath);
+
+  const content = await readRepoFile(repoPath, normalizedPath);
+
   if (!content) {
     return [];
   }
 
-  return content
-    .split(/\r?\n/u)
-    .map((line) => parseRequirementLine(line))
-    .filter((entry): entry is ResolvedDependency => entry !== null);
+  const subjects: ResolvedDependency[] = [];
+
+  for (const rawLine of splitRequirementLines(content)) {
+    const trimmed = stripRequirementComment(rawLine);
+
+    if (!trimmed || trimmed.startsWith("#")) {
+      continue;
+    }
+
+    const includeMatch = trimmed.match(/^(?:-r|--requirement)\s+(.+)$/u);
+
+    if (includeMatch) {
+      const includeTarget = includeMatch[1]?.trim();
+
+      if (includeTarget) {
+        subjects.push(...await parseRequirementsFile(repoPath, resolveIncludedRequirementsPath(normalizedPath, includeTarget), visited));
+      }
+
+      continue;
+    }
+
+    const constraintMatch = trimmed.match(/^(?:-c|--constraint)\s+(.+)$/u);
+
+    if (constraintMatch) {
+      continue;
+    }
+
+    const editableMatch = trimmed.match(/^(?:-e|--editable)\s+(.+)$/u);
+
+    if (editableMatch) {
+      const editableSubject = parseRequirementSpecLine(editableMatch[1] ?? "", normalizedPath);
+
+      if (editableSubject) {
+        subjects.push(editableSubject);
+      }
+
+      continue;
+    }
+
+    if (trimmed.startsWith("-")) {
+      continue;
+    }
+
+    const subject = parseRequirementSpecLine(trimmed, normalizedPath);
+
+    if (subject) {
+      subjects.push(subject);
+    }
+  }
+
+  return subjects;
 }
 
 function parsePyprojectDependencyNames(pyprojectContent: string | null): Set<string> {
@@ -318,6 +493,9 @@ function makeSubjectKey(subject: ResolvedDependency): string {
     subject.name,
     subject.version ?? "",
     subject.source_type,
+    subject.source_ref ?? "",
+    subject.manifest_path ?? "",
+    subject.lockfile_path ?? "",
     subject.top_level ? "top" : "transitive"
   ].join(":");
 }
@@ -429,7 +607,10 @@ export async function resolveRepoDiff(basePath: string, headPath: string): Promi
       pythonSubjects = diffSubjects(parseUvLock(uvLockBase, pyprojectBase), parseUvLock(uvLockHead, pyprojectHead));
     }
   } else if (requirementsBase !== null || requirementsHead !== null) {
-    pythonSubjects = diffSubjects(parseRequirements(requirementsBase), parseRequirements(requirementsHead));
+    pythonSubjects = diffSubjects(
+      await parseRequirementsFile(basePath, "requirements.txt", new Set<string>()),
+      await parseRequirementsFile(headPath, "requirements.txt", new Set<string>())
+    );
   } else if (pyprojectBase !== null || pyprojectHead !== null) {
     unsupportedFiles.push("pyproject.toml");
     issues.push(

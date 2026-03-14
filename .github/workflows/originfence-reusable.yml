@@ -62,6 +62,8 @@ on:
 jobs:
   originfence:
     runs-on: ubuntu-latest
+    env:
+      ORIGINFENCE_CACHE_DIR: ${{ inputs.cache-dir != '' && inputs.cache-dir || '.originfence/cache' }}
     permissions:
       contents: read
       pull-requests: write
@@ -93,6 +95,15 @@ jobs:
           ref: ${{ steps.source.outputs.ref }}
           path: .originfence/action-repo
 
+      - name: Restore OriginFence cache
+        uses: actions/cache/restore@v4
+        with:
+          path: ${{ env.ORIGINFENCE_CACHE_DIR }}
+          key: ${{ runner.os }}-originfence-${{ github.repository }}-${{ github.ref_name || github.ref }}-${{ github.sha }}
+          restore-keys: |
+            ${{ runner.os }}-originfence-${{ github.repository }}-${{ github.ref_name || github.ref }}-
+            ${{ runner.os }}-originfence-${{ github.repository }}-
+
       - id: originfence
         name: Run OriginFence
         uses: ./.originfence/action-repo
@@ -110,3 +121,10 @@ jobs:
           pr-comment: ${{ inputs.pr-comment }}
           comment-mode: ${{ inputs.comment-mode }}
           github-token: ${{ secrets.github-token }}
+
+      - name: Save OriginFence cache
+        if: always()
+        uses: actions/cache/save@v4
+        with:
+          path: ${{ env.ORIGINFENCE_CACHE_DIR }}
+          key: ${{ runner.os }}-originfence-${{ github.repository }}-${{ github.ref_name || github.ref }}-${{ github.sha }}

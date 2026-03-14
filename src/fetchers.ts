@@ -1,4 +1,12 @@
 import { fetchJsonWithCache, readDriftSnapshot, writeDriftSnapshot } from "./cache";
+import {
+  npmDigestFromIntegrity,
+  verifyNpmProvenance,
+  verifyPypiProvenance,
+  type NpmAttestationResponse,
+  type NpmRegistryKeyResponse,
+  type PypiAttestationResponse
+} from "./provenance";
 import type {
   DiagnosticEntry,
   DriftSnapshot,
@@ -20,6 +28,7 @@ interface NpmPackument {
       _npmUser?: { name?: string };
       repository?: string | { url?: string };
       dist?: {
+        integrity?: string;
         attestations?: {
           url?: string;
           provenance?: {
@@ -29,20 +38,6 @@ interface NpmPackument {
       };
     }
   >;
-}
-
-interface NpmAttestationResponse {
-  attestations?: Array<{
-    predicateType?: string;
-    bundle?: {
-      dsseEnvelope?: {
-        payload?: string;
-      };
-      verificationMaterial?: {
-        tlogEntries?: unknown[];
-      };
-    };
-  }>;
 }
 
 interface PypiJsonResponse {
@@ -56,35 +51,16 @@ interface PypiJsonResponse {
         organization?: string | null;
         roles?: Array<{ role?: string; user?: string }>;
       };
-  releases?: Record<string, Array<{ upload_time_iso_8601?: string; filename?: string }>>;
+  releases?: Record<string, Array<{ upload_time_iso_8601?: string; filename?: string; digests?: { sha256?: string } }>>;
   project_status?: {
     status?: string;
   };
   last_serial?: number;
 }
 
-interface PypiIntegrityResponse {
-  attestation_bundles?: Array<{
-    attestations?: Array<{
-      envelope?: {
-        statement?: string;
-      };
-    }>;
-    verification_material?: {
-      certificate?: string;
-    };
-  }>;
-}
-
 interface FetcherConfig {
   cacheDir: string;
   refreshCache: boolean;
-}
-
-interface DecodedStatement {
-  subject?: Array<{ name?: string; digest?: Record<string, string> }>;
-  predicateType?: string;
-  predicate?: Record<string, unknown>;
 }
 
 function normalizeMaintainers(
@@ -141,59 +117,12 @@ function extractRepository(repository: string | { url?: string } | undefined): s
   return repository.url;
 }
 
-function decodeStatement(payload: string | undefined): DecodedStatement | null {
-  if (!payload) {
-    return null;
-  }
-
-  try {
-    return JSON.parse(Buffer.from(payload, "base64").toString("utf8")) as DecodedStatement;
-  } catch {
-    return null;
-  }
-}
-
 function setsDiffer(left: string[], right: string[]): boolean {
   if (left.length !== right.length) {
     return true;
   }
 
   return left.some((value, index) => value !== right[index]);
-}
-
-function verifyNpmAttestations(payload: NpmAttestationResponse | null, subject: ResolvedDependency): boolean {
-  if (!payload?.attestations?.length || !subject.version) {
-    return false;
-  }
-
-  return payload.attestations.some((attestation) => {
-    const statement = decodeStatement(attestation.bundle?.dsseEnvelope?.payload);
-    const subjectMatch = statement?.subject?.some((entry) => entry.name === `pkg:npm/${subject.name}@${subject.version}`);
-    const predicateName = typeof statement?.predicate?.name === "string" ? statement.predicate.name : undefined;
-    const predicateVersion = typeof statement?.predicate?.version === "string" ? statement.predicate.version : undefined;
-    const registry = typeof statement?.predicate?.registry === "string" ? statement.predicate.registry : undefined;
-    const hasVerificationMaterial = Array.isArray(attestation.bundle?.verificationMaterial?.tlogEntries);
-
-    return Boolean(subjectMatch && predicateName === subject.name && predicateVersion === subject.version && registry?.includes("npmjs.org") && hasVerificationMaterial);
-  });
-}
-
-function verifyPypiAttestations(payload: PypiIntegrityResponse | null, fileName: string): boolean {
-  if (!payload?.attestation_bundles?.length) {
-    return false;
-  }
-
-  return payload.attestation_bundles.every((bundle) => {
-    if (!bundle.verification_material?.certificate || !bundle.attestations?.length) {
-      return false;
-    }
-
-    return bundle.attestations.some((attestation) => {
-      const statement = decodeStatement(attestation.envelope?.statement);
-      const subjectMatch = statement?.subject?.some((entry) => entry.name === fileName);
-      return Boolean(subjectMatch && statement?.predicateType === "https://docs.pypi.org/attestations/publish/v1");
-    });
-  });
 }
 
 function mergeEvidence(base: SubjectEvidence, overlay: SubjectEvidence): SubjectEvidence {
@@ -221,15 +150,20 @@ function mergeEvidence(base: SubjectEvidence, overlay: SubjectEvidence): Subject
 
 function mergeAvailability(
   base: SubjectEvidence["availability"],
-  overlay: { hardSignalSourceAvailable?: boolean; freshCacheForSignal?: boolean }
+  overlay: { hardSignalSourceAvailable?: boolean; freshCacheForSignal?: boolean; provenanceVerificationAvailable?: boolean }
 ): SubjectEvidence["availability"] {
   const hardSignalSourceAvailable =
     (base?.hard_signal_source_available ?? true) && (overlay.hardSignalSourceAvailable ?? true);
+  const provenanceVerificationAvailable =
+    base?.provenance_verification_available === false || overlay.provenanceVerificationAvailable === false
+      ? false
+      : base?.provenance_verification_available ?? overlay.provenanceVerificationAvailable;
 
   return {
     ...base,
     hard_signal_source_available: hardSignalSourceAvailable,
-    fresh_cache_for_hard_signal: Boolean(base?.fresh_cache_for_hard_signal || overlay.freshCacheForSignal)
+    fresh_cache_for_hard_signal: Boolean(base?.fresh_cache_for_hard_signal || overlay.freshCacheForSignal),
+    provenance_verification_available: provenanceVerificationAvailable
   };
 }
 
@@ -383,27 +317,54 @@ async function fetchNpmEvidence(subject: ResolvedDependency, config: FetcherConf
       });
 
       diagnostics.push(...attestationResult.diagnostics);
+      const keyResult = await fetchJsonWithCache<NpmRegistryKeyResponse>({
+        cacheDir: config.cacheDir,
+        sourceIdentifier: "npm_registry_keys",
+        lookupKey: "current",
+        url: "https://registry.npmjs.org/-/npm/v1/keys",
+        now: options.now,
+        policy: {
+          freshnessMs: 60 * 60 * 1000,
+          maxStaleMs: 7 * 24 * 60 * 60 * 1000,
+          freshnessTarget: "1h",
+          signalClass: "hard"
+        },
+        refresh: config.refreshCache,
+        subjectRef
+      });
+      diagnostics.push(...keyResult.diagnostics);
+      const verification = await verifyNpmProvenance(
+        attestationResult.payload,
+        subject,
+        keyResult.payload,
+        npmDigestFromIntegrity(versionData?.dist?.integrity),
+        config.cacheDir
+      );
+
       evidence.provenance = {
         present: Boolean(attestationResult.payload?.attestations?.length),
-        verified: verifyNpmAttestations(attestationResult.payload, subject),
+        verified: verification.verified,
+        checked: verification.checked,
         ref: attestationUrl
       };
       evidence.cache = {
         ...evidence.cache,
-        provenance_stale: attestationResult.stale
+        provenance_stale: attestationResult.stale || keyResult.stale
       };
 
-      if (!attestationResult.sourceAvailable) {
+      if (!attestationResult.sourceAvailable || !keyResult.sourceAvailable || !verification.sourceAvailable) {
         evidence.availability = {
           ...evidence.availability,
           hard_signal_source_available: false,
-          fresh_cache_for_hard_signal: attestationResult.freshCacheForSignal
+          fresh_cache_for_hard_signal: Boolean(attestationResult.freshCacheForSignal || keyResult.freshCacheForSignal),
+          ...(verification.checked === false ? { provenance_verification_available: false } : {})
         };
       }
     } else {
       evidence.provenance = {
         present: false,
         verified: false,
+        checked: true,
         ref: `npm_attestations:${subject.name}@${subject.version}`
       };
     }
@@ -480,11 +441,11 @@ async function fetchPypiEvidence(subject: ResolvedDependency, config: FetcherCon
       };
     } else {
       const integrityChecks = await Promise.all(
-        releases
-          .filter((release): release is { upload_time_iso_8601?: string; filename: string } => Boolean(release.filename))
+          releases
+          .filter((release): release is { upload_time_iso_8601?: string; filename: string; digests?: { sha256?: string } } => Boolean(release.filename))
           .map(async (release) => {
             const provenanceUrl = `https://pypi.org/integrity/${encodeURIComponent(subject.name)}/${encodeURIComponent(version)}/${encodeURIComponent(release.filename)}/provenance`;
-            const result = await fetchJsonWithCache<PypiIntegrityResponse>({
+            const result = await fetchJsonWithCache<PypiAttestationResponse>({
               cacheDir: config.cacheDir,
               sourceIdentifier: "pypi_integrity_api",
               lookupKey: `${subject.name}@${version}:${release.filename}`,
@@ -503,6 +464,7 @@ async function fetchPypiEvidence(subject: ResolvedDependency, config: FetcherCon
 
             return {
               fileName: release.filename,
+              digest: release.digests?.sha256 ?? null,
               provenanceUrl,
               result
             };
@@ -514,14 +476,25 @@ async function fetchPypiEvidence(subject: ResolvedDependency, config: FetcherCon
       }
 
       const allPresent = integrityChecks.length > 0 && integrityChecks.every((check) => Boolean(check.result.payload?.attestation_bundles?.length));
-      const allVerified = allPresent && integrityChecks.every((check) => verifyPypiAttestations(check.result.payload, check.fileName));
+      const verificationChecks = await Promise.all(
+        integrityChecks.map(async (check) => ({
+          fileName: check.fileName,
+          digest: check.digest,
+          provenanceUrl: check.provenanceUrl,
+          result: await verifyPypiProvenance(check.result.payload, check.fileName, check.digest, config.cacheDir)
+        }))
+      );
+      const allVerified = allPresent && verificationChecks.every((check) => check.result.verified);
+      const allChecked = verificationChecks.every((check) => check.result.checked);
       const anyUnavailable = integrityChecks.some((check) => !check.result.sourceAvailable);
+      const anyVerificationUnavailable = verificationChecks.some((check) => !check.result.sourceAvailable);
       const anyFreshCache = integrityChecks.some((check) => check.result.freshCacheForSignal);
       const anyStale = integrityChecks.some((check) => check.result.stale);
 
       evidence.provenance = {
         present: allPresent,
         verified: allVerified,
+        checked: allChecked,
         ref: `pypi_integrity:${subject.name}@${version}`
       };
       evidence.cache = {
@@ -529,11 +502,12 @@ async function fetchPypiEvidence(subject: ResolvedDependency, config: FetcherCon
         provenance_stale: anyStale
       };
 
-      if (anyUnavailable) {
+      if (anyUnavailable || anyVerificationUnavailable) {
         evidence.availability = {
           ...evidence.availability,
           hard_signal_source_available: false,
-          fresh_cache_for_hard_signal: anyFreshCache
+          fresh_cache_for_hard_signal: anyFreshCache,
+          ...(allChecked ? {} : { provenance_verification_available: false })
         };
       }
     }

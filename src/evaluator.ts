@@ -131,14 +131,23 @@ function buildReasonMessage(code: string, subject: Subject, issueSummary?: strin
 function buildEvaluationMeta(
   evaluatedAt: string,
   evidence: EvidenceRecord[],
-  availability: { hard_signal_source_available?: boolean; soft_signal_source_available?: boolean; fresh_cache_for_hard_signal?: boolean } | undefined
+  availability:
+    | {
+        hard_signal_source_available?: boolean;
+        soft_signal_source_available?: boolean;
+        fresh_cache_for_hard_signal?: boolean;
+        provenance_verification_available?: boolean;
+      }
+    | undefined
 ): EvaluationMeta {
   const staleEvidenceRefs = evidence.filter((record) => record.stale).map((record) => record.id);
 
   let hardSignalState: EvaluationMeta["hard_signal_state"] = "not_checked";
   let softSignalState: EvaluationMeta["soft_signal_state"] = "not_checked";
 
-  if (availability?.hard_signal_source_available === false) {
+  if (availability?.provenance_verification_available === false) {
+    hardSignalState = "missing";
+  } else if (availability?.hard_signal_source_available === false) {
     hardSignalState = availability.fresh_cache_for_hard_signal ? "stale" : "missing";
   } else if (staleEvidenceRefs.length > 0) {
     hardSignalState = "stale";
@@ -304,6 +313,15 @@ async function buildSubjectResult(
       waivable: definition.waivable
     });
   };
+  const addHardSignalUnavailableReason = (ref: string): void => {
+    const evidenceRef = builder.add({
+      source: "hard_signal_source",
+      kind: "cache_meta",
+      ref
+    });
+    addReason("HARD_SIGNAL_SOURCE_UNAVAILABLE");
+    reasons.at(-1)?.evidence_refs.push(evidenceRef);
+  };
 
   if (subject.source_type === "registry" && !isSourceAllowed(subject, policy)) {
     const ref = builder.add({
@@ -376,7 +394,11 @@ async function buildSubjectResult(
     }
   }
 
-  if (evidenceInput.provenance?.present === true && evidenceInput.provenance.verified === false) {
+  if (
+    evidenceInput.provenance?.present === true &&
+    evidenceInput.provenance.checked !== false &&
+    evidenceInput.provenance.verified === false
+  ) {
     const ref = builder.add({
       source: subject.ecosystem === "npm" ? "npm_provenance" : "pypi_attestations",
       kind: "attestation",
@@ -441,14 +463,10 @@ async function buildSubjectResult(
     reasons.at(-1)?.evidence_refs.push(ref);
   }
 
-  if (evidenceInput.availability?.hard_signal_source_available === false && !evidenceInput.availability.fresh_cache_for_hard_signal) {
-    const ref = builder.add({
-      source: "hard_signal_source",
-      kind: "cache_meta",
-      ref: subject.name
-    });
-    addReason("HARD_SIGNAL_SOURCE_UNAVAILABLE");
-    reasons.at(-1)?.evidence_refs.push(ref);
+  if (provenanceAction && evidenceInput.availability?.provenance_verification_available === false) {
+    addHardSignalUnavailableReason(evidenceInput.provenance?.ref ?? subject.name);
+  } else if (evidenceInput.availability?.hard_signal_source_available === false && !evidenceInput.availability.fresh_cache_for_hard_signal) {
+    addHardSignalUnavailableReason(subject.name);
   }
 
   reasons.sort((left, right) => {

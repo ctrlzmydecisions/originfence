@@ -238,6 +238,48 @@ test("github action wrapper preserves a failure report when repo policy is malfo
   assert.match(summary, /Policy schema validation failed/);
 });
 
+test("github action wrapper derives the base revision from the pull_request event payload when base-rev is omitted", async () => {
+  const repo = await makeGitRepo(
+    {
+      "requirements.txt": "# no dependencies\n"
+    },
+    {
+      "requirements.txt": "internal-tooling-lib @ https://packages.example.com/internal-tooling-lib-1.0.0.tar.gz\n"
+    }
+  );
+
+  const outputFile = path.join(repo.root, "github-output.txt");
+  const summaryFile = path.join(repo.root, "github-step-summary.md");
+  const eventFile = path.join(repo.root, "github-event.json");
+
+  await fs.writeFile(eventFile, JSON.stringify({
+    pull_request: {
+      base: {
+        sha: repo.baseRev
+      }
+    }
+  }), "utf8");
+
+  const result = spawnSync(process.execPath, ["dist/src/github-action.js"], {
+    cwd: process.cwd(),
+    env: {
+      ...process.env,
+      GITHUB_WORKSPACE: repo.root,
+      GITHUB_ACTION_PATH: process.cwd(),
+      GITHUB_OUTPUT: outputFile,
+      GITHUB_STEP_SUMMARY: summaryFile,
+      GITHUB_EVENT_PATH: eventFile
+    },
+    encoding: "utf8"
+  });
+
+  assert.equal(result.status, 1);
+  const outputs = await readGitHubOutputs(outputFile);
+
+  assert.equal(outputs.status, "failure");
+  assert.equal(outputs.decision, "review");
+});
+
 test("github action wrapper renders repo issues with manifest and lockfile paths", async () => {
   const repo = await makeGitRepo(
     {

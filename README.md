@@ -4,7 +4,7 @@ Trust new dependency changes before they land.
 
 OriginFence reviews dependency changes in pull requests and tells you whether to trust them before merge.
 
-It looks only at the packages added or changed in a PR, then decides whether to `allow`, `warn`, `review`, or `block` them using repo policy, waivers, provenance checks, malicious-package intelligence, and upstream registry signals.
+It looks only at the packages added or changed in a PR, then decides whether to `allow`, `warn`, `review`, or `block` them using repo policy, waivers, cryptographic provenance checks, malicious-package intelligence, and upstream registry signals.
 
 It is built for teams that want trust decisions at merge time, in GitHub, with policy and waivers kept in the repo.
 
@@ -83,6 +83,15 @@ jobs:
         with:
           fetch-depth: 2
 
+      - name: Restore OriginFence cache
+        uses: actions/cache/restore@v4
+        with:
+          path: .originfence/cache
+          key: ${{ runner.os }}-originfence-${{ github.repository }}-${{ github.ref_name || github.ref }}-${{ github.sha }}
+          restore-keys: |
+            ${{ runner.os }}-originfence-${{ github.repository }}-${{ github.ref_name || github.ref }}-
+            ${{ runner.os }}-originfence-${{ github.repository }}-
+
       - name: Run OriginFence
         id: originfence
         uses: OWNER/originfence@v0
@@ -101,6 +110,13 @@ jobs:
           path: |
             ${{ steps.originfence.outputs.report-path }}
             ${{ steps.originfence.outputs.summary-path }}
+
+      - name: Save OriginFence cache
+        if: always()
+        uses: actions/cache/save@v4
+        with:
+          path: .originfence/cache
+          key: ${{ runner.os }}-originfence-${{ github.repository }}-${{ github.ref_name || github.ref }}-${{ github.sha }}
 ```
 
 Reference examples:
@@ -111,7 +127,7 @@ Reference examples:
 
 1. Compare the base revision to the PR head.
 2. Resolve only the changed dependency subjects from supported manifests and lockfiles.
-3. Gather registry metadata, provenance signals, malicious-package intelligence, and OriginFence drift history.
+3. Gather registry metadata, cryptographically verified provenance signals, malicious-package intelligence, and OriginFence drift history.
 4. Apply baseline policy, repo policy, and explicit waivers.
 5. Emit a required-check result, job summary, optional sticky PR comment, and canonical JSON report.
 
@@ -122,8 +138,9 @@ Recommended rollout path:
 1. Add `.originfence/policy.yaml` and `.originfence/waivers.yaml` from a preset.
 2. Start with `enforcement-mode: observe`.
 3. Review job summaries and PR comments for a week or two.
-4. Tune policy and waivers.
-5. Switch to `enforcement-mode: enforce` when the repo is ready.
+4. Keep the cache step in place so drift history and provenance trust roots stay warm across runs.
+5. Tune policy and waivers.
+6. Switch to `enforcement-mode: enforce` when the repo is ready.
 
 Preset entry points:
 - [`presets/observe.policy.yaml`](./presets/observe.policy.yaml)
@@ -148,6 +165,8 @@ OriginFence evaluates malicious-package signals in this order:
 
 PyPI project status is treated separately as a hard upstream registry signal.
 
+OriginFence keeps HTTP cache, drift snapshots, and provenance trust-root state under `.originfence/cache` by default. Persist that directory with `actions/cache` if you want drift signals and provenance verification to stay warm on GitHub-hosted runners.
+
 ## Outputs
 
 OriginFence always writes:
@@ -167,7 +186,8 @@ In `observe` mode, OriginFence keeps the underlying decision in the report and h
 - OriginFence supports `npm` and `PyPI` only.
 - OriginFence evaluates changed subjects only; it is not a full historical dependency inventory scanner.
 - OriginFence is a PR gate, not a transparent package proxy.
-- Provenance is useful evidence, not proof that a package is safe.
+- Python support covers common `requirements.txt` specifiers, include files, direct references, and editable VCS entries. `uv.lock` still gives OriginFence the strongest exact-resolution path.
+- Provenance verification is strongest for exact releases. For Python, `uv.lock` or tightly pinned `requirements.txt` gives OriginFence the cleanest evidence path.
 - The repository ships the Action as prebuilt bundled JavaScript; npm package publishing is not set up yet.
 
 ## Developing

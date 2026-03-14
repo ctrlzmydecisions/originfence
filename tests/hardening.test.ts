@@ -1,7 +1,9 @@
 import assert from "node:assert/strict";
 import test from "node:test";
+import { TUFError } from "sigstore";
 
 import { evaluate } from "../src/evaluator";
+import { setSigstoreVerifierForTests } from "../src/provenance";
 import { makeTempDir, writeFiles } from "./helpers";
 
 function makeJsonResponse(payload: unknown, init?: ResponseInit): Response {
@@ -413,6 +415,7 @@ test("evaluate accepts structurally valid npm attestations when provenance is re
   const headPath = await makeTempDir("originfence-prov-head-");
   const cacheDir = await makeTempDir("originfence-prov-cache-");
   const originalFetch = global.fetch;
+  const originalVerifierReset = () => setSigstoreVerifierForTests(null);
 
   const statement = Buffer.from(JSON.stringify({
     _type: "https://in-toto.io/Statement/v0.1",
@@ -511,6 +514,7 @@ test("evaluate accepts structurally valid npm attestations when provenance is re
               },
               repository: "https://github.com/example/trusted-lib",
               dist: {
+                integrity: "sha512-3q2+7w==",
                 attestations: {
                   url: "https://registry.npmjs.org/-/npm/v1/attestations/trusted-lib@1.0.0",
                   provenance: {
@@ -529,10 +533,21 @@ test("evaluate accepts structurally valid npm attestations when provenance is re
             {
               predicateType: "https://github.com/npm/attestation/tree/main/specs/publish/v0.1",
               bundle: {
+                mediaType: "application/vnd.dev.sigstore.bundle+json;version=0.2",
                 verificationMaterial: {
+                  publicKey: {
+                    hint: "SHA256:test-registry-key"
+                  },
                   tlogEntries: [{}]
                 },
                 dsseEnvelope: {
+                  payloadType: "application/vnd.in-toto+json",
+                  signatures: [
+                    {
+                      sig: "MEUCIQD1JCA8lWR9na44+zY2tr13sEuMCIu+FLS6eDkwESP5KgIgQDNG+eA5PiLSvVd+0AJn3Nk1V3CpRjRoz59L/MMTxyM=",
+                      keyid: "SHA256:test-registry-key"
+                    }
+                  ],
                   payload: statement
                 }
               }
@@ -541,8 +556,20 @@ test("evaluate accepts structurally valid npm attestations when provenance is re
         });
       }
 
+      if (url === "https://registry.npmjs.org/-/npm/v1/keys") {
+        return makeJsonResponse({
+          keys: [
+            {
+              keyid: "SHA256:test-registry-key",
+              key: "MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEY6Ya7W++7aUPzvMTrezH6Ycx3c+HOKYCcNGybJZSCJq/fd7Qa8uuAKtdIkUQtQiEKERhAmE5lMMJhP8OkDOa2g=="
+            }
+          ]
+        });
+      }
+
       throw new Error(`Unexpected fetch: ${url}`);
     };
+    setSigstoreVerifierForTests(async () => ({}));
 
     const result = await evaluate({
       basePath,
@@ -555,6 +582,199 @@ test("evaluate accepts structurally valid npm attestations when provenance is re
     assert.equal(result.report.results[0]?.effective_decision, "allow");
     assert.equal(result.report.results[0]?.reasons.length, 0);
   } finally {
+    originalVerifierReset();
+    global.fetch = originalFetch;
+  }
+});
+
+test("evaluate blocks when required provenance cannot be verified after falling back to cached attestation data", async () => {
+  const basePath = await makeTempDir("originfence-prov-cache-base-");
+  const headPath = await makeTempDir("originfence-prov-cache-head-");
+  const cacheDir = await makeTempDir("originfence-prov-cache-cache-");
+  const originalFetch = global.fetch;
+  const originalVerifierReset = () => setSigstoreVerifierForTests(null);
+
+  const statement = Buffer.from(JSON.stringify({
+    _type: "https://in-toto.io/Statement/v0.1",
+    subject: [
+      {
+        name: "pkg:npm/trusted-lib@1.0.0",
+        digest: {
+          sha512: "deadbeef"
+        }
+      }
+    ],
+    predicateType: "https://github.com/npm/attestation/tree/main/specs/publish/v0.1",
+    predicate: {
+      name: "trusted-lib",
+      version: "1.0.0",
+      registry: "https://registry.npmjs.org"
+    }
+  })).toString("base64");
+
+  await writeFiles(basePath, {
+    "package.json": JSON.stringify({
+      name: "fixture-app",
+      version: "1.0.0"
+    }, null, 2),
+    "package-lock.json": JSON.stringify({
+      name: "fixture-app",
+      version: "1.0.0",
+      lockfileVersion: 3,
+      requires: true,
+      packages: {
+        "": {
+          name: "fixture-app",
+          version: "1.0.0"
+        }
+      }
+    }, null, 2)
+  });
+
+  await writeFiles(headPath, {
+    "package.json": JSON.stringify({
+      name: "fixture-app",
+      version: "1.0.0",
+      dependencies: {
+        "trusted-lib": "^1.0.0"
+      }
+    }, null, 2),
+    "package-lock.json": JSON.stringify({
+      name: "fixture-app",
+      version: "1.0.0",
+      lockfileVersion: 3,
+      requires: true,
+      packages: {
+        "": {
+          name: "fixture-app",
+          version: "1.0.0",
+          dependencies: {
+            "trusted-lib": "^1.0.0"
+          }
+        },
+        "node_modules/trusted-lib": {
+          version: "1.0.0",
+          resolved: "https://registry.npmjs.org/trusted-lib/-/trusted-lib-1.0.0.tgz"
+        }
+      }
+    }, null, 2),
+    ".originfence/policy.yaml": [
+      "version: 1",
+      "provenance:",
+      "  npm:",
+      "    require_for:",
+      "      - trusted-*",
+      "    missing_action: block"
+    ].join("\n")
+  });
+
+  try {
+    global.fetch = async (input) => {
+      const url = String(input);
+      const maliciousIntelResponse = maybeMaliciousIntelResponse(url);
+
+      if (maliciousIntelResponse) {
+        return maliciousIntelResponse;
+      }
+
+      if (url === "https://registry.npmjs.org/trusted-lib") {
+        return makeJsonResponse({
+          repository: "https://github.com/example/trusted-lib",
+          maintainers: [{ name: "maintainer" }],
+          time: {
+            "1.0.0": "2025-12-01T00:00:00Z"
+          },
+          versions: {
+            "1.0.0": {
+              _npmUser: {
+                name: "publisher"
+              },
+              repository: "https://github.com/example/trusted-lib",
+              dist: {
+                integrity: "sha512-3q2+7w==",
+                attestations: {
+                  url: "https://registry.npmjs.org/-/npm/v1/attestations/trusted-lib@1.0.0",
+                  provenance: {
+                    predicateType: "https://slsa.dev/provenance/v1"
+                  }
+                }
+              }
+            }
+          }
+        });
+      }
+
+      if (url === "https://registry.npmjs.org/-/npm/v1/attestations/trusted-lib@1.0.0") {
+        return makeJsonResponse({
+          attestations: [
+            {
+              predicateType: "https://github.com/npm/attestation/tree/main/specs/publish/v0.1",
+              bundle: {
+                mediaType: "application/vnd.dev.sigstore.bundle+json;version=0.2",
+                verificationMaterial: {
+                  publicKey: {
+                    hint: "SHA256:test-registry-key"
+                  },
+                  tlogEntries: [{}]
+                },
+                dsseEnvelope: {
+                  payloadType: "application/vnd.in-toto+json",
+                  signatures: [
+                    {
+                      sig: "MEUCIQD1JCA8lWR9na44+zY2tr13sEuMCIu+FLS6eDkwESP5KgIgQDNG+eA5PiLSvVd+0AJn3Nk1V3CpRjRoz59L/MMTxyM=",
+                      keyid: "SHA256:test-registry-key"
+                    }
+                  ],
+                  payload: statement
+                }
+              }
+            }
+          ]
+        });
+      }
+
+      if (url === "https://registry.npmjs.org/-/npm/v1/keys") {
+        return makeJsonResponse({
+          keys: [
+            {
+              keyid: "SHA256:test-registry-key",
+              key: "MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEY6Ya7W++7aUPzvMTrezH6Ycx3c+HOKYCcNGybJZSCJq/fd7Qa8uuAKtdIkUQtQiEKERhAmE5lMMJhP8OkDOa2g=="
+            }
+          ]
+        });
+      }
+
+      throw new Error(`Unexpected fetch: ${url}`);
+    };
+
+    setSigstoreVerifierForTests(async () => ({}));
+    await evaluate({
+      basePath,
+      headPath,
+      now: "2026-03-13T12:00:00Z",
+      cacheDir
+    });
+
+    setSigstoreVerifierForTests(async () => {
+      throw new TUFError({
+        code: "TUF_REFRESH_METADATA_ERROR",
+        message: "simulated trust root outage"
+      });
+    });
+
+    const result = await evaluate({
+      basePath,
+      headPath,
+      now: "2026-03-13T12:05:00Z",
+      cacheDir
+    });
+
+    assert.equal(result.report.status, "failure");
+    assert.equal(result.report.results[0]?.reasons.some((reason) => reason.code === "HARD_SIGNAL_SOURCE_UNAVAILABLE"), true);
+    assert.equal(result.report.results[0]?.reasons.some((reason) => reason.code === "MISSING_PROVENANCE"), false);
+    assert.equal(result.report.results[0]?.evaluation_meta.hard_signal_state, "missing");
+  } finally {
+    originalVerifierReset();
     global.fetch = originalFetch;
   }
 });

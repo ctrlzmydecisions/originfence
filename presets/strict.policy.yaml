@@ -1,5 +1,6 @@
 # OriginFence preset: strict
-# Stricter rollout with provenance required for all supported registry packages and stronger soft-signal review.
+# Stricter public-repo rollout with stronger soft-signal review. Add package globs under provenance.require_for once your dependency set has reliable attestations.
+# Start with explicit package globs under provenance.require_for instead of requiring provenance for every public package.
 
 version: 1
 sources:
@@ -11,12 +12,10 @@ sources:
   deny_direct_urls: true
 provenance:
   npm:
-    require_for:
-      - "*"
+    require_for: []
     missing_action: block
   pypi:
-    require_for:
-      - "*"
+    require_for: []
     missing_action: block
 malicious_packages:
   action: block

@@ -85,18 +85,35 @@ function execGit(args: string[], cwd: string): string {
   return result.stdout.trim();
 }
 
-function deriveBaseRev(workspace: string): string {
+async function deriveBaseRev(workspace: string): Promise<string> {
   const explicitBaseRev = getInput("base-rev");
 
   if (explicitBaseRev) {
     return explicitBaseRev;
   }
 
+  const payload = await readEventPayload();
+  const pullRequestBaseSha = payload?.pull_request && typeof payload.pull_request === "object"
+    ? (payload.pull_request as { base?: { sha?: unknown } }).base?.sha
+    : undefined;
+
+  if (typeof pullRequestBaseSha === "string" && pullRequestBaseSha.length > 0) {
+    return pullRequestBaseSha;
+  }
+
+  const mergeGroupBaseSha = payload?.merge_group && typeof payload.merge_group === "object"
+    ? (payload.merge_group as { base_sha?: unknown }).base_sha
+    : undefined;
+
+  if (typeof mergeGroupBaseSha === "string" && mergeGroupBaseSha.length > 0) {
+    return mergeGroupBaseSha;
+  }
+
   try {
     return execGit(["rev-parse", "HEAD^1"], workspace);
   } catch {
     throw new Error(
-      "Unable to derive the base revision. Use actions/checkout with fetch-depth: 2 on a merge commit, or pass the base-rev input explicitly."
+      "Unable to derive the base revision. For pull_request and merge_group events OriginFence reads the base SHA from the event payload; otherwise use actions/checkout with fetch-depth: 2 on a merge commit, or pass the base-rev input explicitly."
     );
   }
 }
@@ -197,7 +214,7 @@ async function resolvePullRequestTarget(token: string | undefined): Promise<Stic
 
 async function buildConfig(): Promise<ActionConfig> {
   const workspace = process.env.GITHUB_WORKSPACE ? path.resolve(process.env.GITHUB_WORKSPACE) : process.cwd();
-  const baseRev = deriveBaseRev(workspace);
+  const baseRev = await deriveBaseRev(workspace);
 
   return {
     workspace,

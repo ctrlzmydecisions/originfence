@@ -1,0 +1,20 @@
+{
+  "subjects": [
+    {
+      "match": {
+        "ecosystem": "npm",
+        "name": "odd-lib",
+        "version": "3.1.0"
+      },
+      "registry": {
+        "registry_host": "registry.npmjs.org",
+        "published_at": "2025-06-01T00:00:00Z",
+        "repository": "https://github.com/another-org/odd-lib",
+        "publisher_identity": "unexpected-publisher"
+      },
+      "signals": {
+        "publisher_identity_drift": true
+      }
+    }
+  ]
+}

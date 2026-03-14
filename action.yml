@@ -1,0 +1,103 @@
+name: OriginFence
+description: Run OriginFence as a GitHub pull-request trust gate.
+
+inputs:
+  base-rev:
+    description: Base git revision to compare against. Defaults to the first parent of HEAD.
+    required: false
+  policy-path:
+    description: Optional repo-local policy path. Defaults to .originfence/policy.yaml under the workspace.
+    required: false
+  baseline-policy-path:
+    description: Optional baseline policy path to merge before the repo policy.
+    required: false
+  waivers-path:
+    description: Optional waiver file path. Defaults to .originfence/waivers.yaml under the workspace.
+    required: false
+  malicious-packages-file:
+    description: Optional JSON file with emergency malicious-package override entries layered ahead of the default open-source feeds.
+    required: false
+  json-out:
+    description: Output path for the canonical JSON report.
+    required: false
+  summary-out:
+    description: Output path for the plain-text summary.
+    required: false
+  write-job-summary:
+    description: Whether to write the GitHub job summary when GITHUB_STEP_SUMMARY is available.
+    required: false
+    default: "true"
+  cache-dir:
+    description: Optional cache directory for OriginFence HTTP cache and drift snapshots.
+    required: false
+  refresh:
+    description: Force OriginFence to refresh cache-backed sources before evaluating.
+    required: false
+    default: "false"
+  enforcement-mode:
+    description: Enforcement mode. Use observe to surface findings without failing the required check.
+    required: false
+    default: "enforce"
+  pr-comment:
+    description: Enable sticky pull-request comments as a secondary visibility surface.
+    required: false
+    default: "false"
+  comment-mode:
+    description: Comment policy. One of off, review_and_block, warn_review_block, always.
+    required: false
+    default: "review_and_block"
+  github-token:
+    description: Token used for sticky pull-request comments when pr-comment is enabled.
+    required: false
+
+outputs:
+  status:
+    description: success, failure, or neutral after enforcement-mode is applied
+    value: ${{ steps.originfence.outputs.status }}
+  decision:
+    description: Worst effective decision across changed subjects before enforcement-mode remaps the workflow status
+    value: ${{ steps.originfence.outputs.decision }}
+  report-path:
+    description: Path to the generated JSON report, relative to the workspace by default
+    value: ${{ steps.originfence.outputs.report-path }}
+  summary-path:
+    description: Path to the generated plain-text summary, relative to the workspace by default
+    value: ${{ steps.originfence.outputs.summary-path }}
+  changed-subjects:
+    description: Number of changed subjects evaluated
+    value: ${{ steps.originfence.outputs.changed-subjects }}
+  comment-state:
+    description: created, updated, skipped, or error for sticky PR comments
+    value: ${{ steps.originfence.outputs.comment-state }}
+  comment-id:
+    description: Numeric GitHub issue comment id when a sticky PR comment was created or updated
+    value: ${{ steps.originfence.outputs.comment-id }}
+
+runs:
+  using: composite
+  steps:
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: 22
+    - id: originfence
+      name: Run OriginFence
+      shell: bash
+      working-directory: ${{ github.workspace }}
+      env:
+        GITHUB_ACTION_PATH: ${{ github.action_path }}
+        INPUT_BASE_REV: ${{ inputs.base-rev }}
+        INPUT_POLICY_PATH: ${{ inputs.policy-path }}
+        INPUT_BASELINE_POLICY_PATH: ${{ inputs.baseline-policy-path }}
+        INPUT_WAIVERS_PATH: ${{ inputs.waivers-path }}
+        INPUT_MALICIOUS_PACKAGES_FILE: ${{ inputs.malicious-packages-file }}
+        INPUT_JSON_OUT: ${{ inputs.json-out }}
+        INPUT_SUMMARY_OUT: ${{ inputs.summary-out }}
+        INPUT_WRITE_JOB_SUMMARY: ${{ inputs.write-job-summary }}
+        INPUT_CACHE_DIR: ${{ inputs.cache-dir }}
+        INPUT_REFRESH: ${{ inputs.refresh }}
+        INPUT_ENFORCEMENT_MODE: ${{ inputs.enforcement-mode }}
+        INPUT_PR_COMMENT: ${{ inputs.pr-comment }}
+        INPUT_COMMENT_MODE: ${{ inputs.comment-mode }}
+        INPUT_GITHUB_TOKEN: ${{ inputs.github-token }}
+      run: node "$GITHUB_ACTION_PATH/bundle/github-action/index.js"

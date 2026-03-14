@@ -1,0 +1,66 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://originfence.local/schemas/drift-snapshot.schema.json",
+  "title": "OriginFence Drift Snapshot",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "captured_at",
+    "ecosystem",
+    "package",
+    "maintainers",
+    "source_refs"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "1"
+    },
+    "captured_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "ecosystem": {
+      "enum": [
+        "npm",
+        "pypi"
+      ]
+    },
+    "package": {
+      "type": "string",
+      "minLength": 1
+    },
+    "version": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "registry_host": {
+      "type": "string"
+    },
+    "repository": {
+      "type": "string"
+    },
+    "publisher_identity": {
+      "type": "string"
+    },
+    "maintainers": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "serial": {
+      "type": "string"
+    },
+    "source_refs": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    }
+  }
+}

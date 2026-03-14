@@ -1,0 +1,45 @@
+name: OriginFence
+
+on:
+  pull_request:
+  merge_group:
+    types:
+      - checks_requested
+
+permissions:
+  contents: read
+  pull-requests: write
+  issues: write
+
+jobs:
+  originfence:
+    name: originfence
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout merge candidate
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+
+      - name: Run OriginFence
+        id: originfence
+        uses: your-org/originfence@v0
+        with:
+          enforcement-mode: observe
+          write-job-summary: "true"
+          pr-comment: "true"
+          comment-mode: review_and_block
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Upload OriginFence report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: originfence-report-${{ github.run_id }}-${{ github.job }}
+          path: |
+            ${{ steps.originfence.outputs.report-path }}
+            ${{ steps.originfence.outputs.summary-path }}
+
+      # Start in observe mode to surface findings without blocking merges.
+      # Switch enforcement-mode to enforce once the repo policy and waivers are tuned.

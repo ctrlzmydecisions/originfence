@@ -1,0 +1,27 @@
+# OriginFence preset: observe
+# Safe initial rollout preset. Pair this with enforcement-mode: observe in the workflow until the repo is tuned.
+# Recommended workflow input during initial rollout: enforcement-mode: observe
+
+version: 1
+sources:
+  allow:
+    - registry.npmjs.org
+    - npmjs.org
+    - pypi.org
+    - files.pythonhosted.org
+  deny_direct_urls: true
+provenance:
+  npm:
+    require_for: []
+    missing_action: review
+  pypi:
+    require_for: []
+    missing_action: review
+malicious_packages:
+  action: block
+soft_signals:
+  recent_package_age_days: 14
+  maintainer_set_change: warn
+  publisher_identity_drift: review
+waivers:
+  file: .originfence/waivers.yaml

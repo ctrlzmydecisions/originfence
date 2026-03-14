@@ -1,0 +1,26 @@
+# OriginFence preset: balanced
+# Recommended starting point for most repositories.
+
+version: 1
+sources:
+  allow:
+    - registry.npmjs.org
+    - npmjs.org
+    - pypi.org
+    - files.pythonhosted.org
+  deny_direct_urls: true
+provenance:
+  npm:
+    require_for: []
+    missing_action: review
+  pypi:
+    require_for: []
+    missing_action: review
+malicious_packages:
+  action: block
+soft_signals:
+  recent_package_age_days: 14
+  maintainer_set_change: warn
+  publisher_identity_drift: review
+waivers:
+  file: .originfence/waivers.yaml

@@ -1,0 +1,16 @@
+{
+  "subjects": [
+    {
+      "match": {
+        "ecosystem": "pypi",
+        "name": "unsafe-lib",
+        "version": "1.0.0"
+      },
+      "registry": {
+        "registry_host": "pypi.org",
+        "published_at": "2025-01-01T00:00:00Z",
+        "status": "quarantined"
+      }
+    }
+  ]
+}

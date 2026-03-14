@@ -1,0 +1,7 @@
+Decision: failure
+Changed subjects: 1
+Blocked: 1  Review: 0  Warn: 0  Allow: 0
+
+[block] pnpm-lock.yaml
+  code: UNSUPPORTED_PROJECT_FORMAT
+  next: Use a supported lockfile or requirements format before enabling OriginFence.

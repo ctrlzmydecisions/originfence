@@ -1,0 +1,84 @@
+{
+  "schema_version": "1",
+  "generated_at": "2026-03-13T12:00:00Z",
+  "tool_version": "0.1.0",
+  "status": "failure",
+  "decision": "block",
+  "summary": "1 changed subject(s): 1 blocked, 0 review, 0 warn, 0 allow.",
+  "counts": {
+    "changed_subjects": 1,
+    "allow": 0,
+    "warn": 0,
+    "review": 0,
+    "block": 1
+  },
+  "paths": {
+    "base": "/Users/nsatyakrishna/Code/OriginFence/fixtures/cases/npm-invalid-provenance-block/base",
+    "head": "/Users/nsatyakrishna/Code/OriginFence/fixtures/cases/npm-invalid-provenance-block/head"
+  },
+  "policy": {
+    "source": "builtin:default,/Users/nsatyakrishna/Code/OriginFence/fixtures/cases/npm-invalid-provenance-block/policy.yaml",
+    "checksum": "2d20edf62c306208db9df648de66964639daf6edf03c52b8bc4903712ae7a89a",
+    "waivers_file": ".originfence/waivers.yaml"
+  },
+  "unsupported_files": [],
+  "results": [
+    {
+      "schema_version": "1",
+      "subject": {
+        "ecosystem": "npm",
+        "name": "@our-org/secure-lib",
+        "version": "1.2.3",
+        "source_type": "registry",
+        "manifest_path": "package.json",
+        "lockfile_path": "package-lock.json",
+        "top_level": true
+      },
+      "base_decision": "block",
+      "effective_decision": "block",
+      "waived": false,
+      "summary": "@our-org/secure-lib@1.2.3 is block because @our-org/secure-lib@1.2.3 has invalid or mismatched provenance.",
+      "reasons": [
+        {
+          "code": "INVALID_PROVENANCE",
+          "severity": "critical",
+          "decision": "block",
+          "message": "@our-org/secure-lib@1.2.3 has invalid or mismatched provenance.",
+          "evidence_refs": [
+            "ev2"
+          ],
+          "waivable": false
+        }
+      ],
+      "evidence": [
+        {
+          "id": "ev1",
+          "source": "npm_registry",
+          "kind": "registry_metadata",
+          "ref": "@our-org/secure-lib@1.2.3",
+          "fetched_at": "2026-03-13T12:00:00Z"
+        },
+        {
+          "id": "ev2",
+          "source": "npm_provenance",
+          "kind": "attestation",
+          "ref": "fixtures:@our-org/secure-lib@1.2.3",
+          "fetched_at": "2026-03-13T12:00:00Z",
+          "verified": false
+        }
+      ],
+      "waivers_applied": [],
+      "next_action": {
+        "kind": "investigate_publisher",
+        "summary": "Replace the artifact or investigate the publisher."
+      },
+      "evaluation_meta": {
+        "evaluated_at": "2026-03-13T12:00:00Z",
+        "tool_version": "0.1.0",
+        "hard_signal_state": "fresh",
+        "soft_signal_state": "fresh",
+        "stale_evidence_refs": []
+      }
+    }
+  ]
+}

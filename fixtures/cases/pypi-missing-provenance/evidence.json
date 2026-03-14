@@ -1,0 +1,21 @@
+{
+  "subjects": [
+    {
+      "match": {
+        "ecosystem": "pypi",
+        "name": "critical-lib",
+        "version": "1.0.0"
+      },
+      "registry": {
+        "registry_host": "pypi.org",
+        "published_at": "2025-02-01T00:00:00Z",
+        "repository": "https://github.com/example/critical-lib"
+      },
+      "provenance": {
+        "present": false,
+        "verified": false,
+        "ref": "fixtures:critical-lib@1.0.0"
+      }
+    }
+  ]
+}

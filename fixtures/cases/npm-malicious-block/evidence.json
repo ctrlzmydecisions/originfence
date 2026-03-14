@@ -1,0 +1,19 @@
+{
+  "subjects": [
+    {
+      "match": {
+        "ecosystem": "npm",
+        "name": "evil-pkg",
+        "version": "1.4.2"
+      },
+      "registry": {
+        "registry_host": "registry.npmjs.org",
+        "published_at": "2025-05-01T00:00:00Z"
+      },
+      "malicious": {
+        "matched": true,
+        "ref": "fixtures:evil-pkg@1.4.2"
+      }
+    }
+  ]
+}

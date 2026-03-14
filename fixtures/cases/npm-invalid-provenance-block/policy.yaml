@@ -1,0 +1,6 @@
+version: 1
+provenance:
+  npm:
+    require_for:
+      - "@our-org/*"
+    missing_action: review

@@ -1,0 +1,7 @@
+Decision: failure
+Changed subjects: 1
+Blocked: 1  Review: 0  Warn: 0  Allow: 0
+
+[block] weird-pkg@9.9.9
+  code: SOURCE_DENIED
+  next: Use an approved registry source.

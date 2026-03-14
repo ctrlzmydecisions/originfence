@@ -1,0 +1,6 @@
+version: 1
+provenance:
+  pypi:
+    require_for:
+      - "critical-*"
+    missing_action: review

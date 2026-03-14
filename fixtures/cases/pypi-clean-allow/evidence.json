@@ -1,0 +1,19 @@
+{
+  "subjects": [
+    {
+      "match": {
+        "ecosystem": "pypi",
+        "name": "urllib3",
+        "version": "2.2.3"
+      },
+      "registry": {
+        "registry_host": "pypi.org",
+        "published_at": "2025-01-01T00:00:00Z",
+        "repository": "https://github.com/urllib3/urllib3",
+        "maintainers": [
+          "urllib3-maintainer"
+        ]
+      }
+    }
+  ]
+}

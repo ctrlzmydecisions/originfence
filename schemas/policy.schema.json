@@ -1,0 +1,109 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://originfence.local/schemas/policy.schema.json",
+  "title": "OriginFence Policy",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "version"
+  ],
+  "properties": {
+    "version": {
+      "const": 1
+    },
+    "sources": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "allow": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "deny_direct_urls": {
+          "type": "boolean"
+        }
+      }
+    },
+    "provenance": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "npm": {
+          "$ref": "#/$defs/provenanceRule"
+        },
+        "pypi": {
+          "$ref": "#/$defs/provenanceRule"
+        }
+      }
+    },
+    "malicious_packages": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "action": {
+          "enum": [
+            "warn",
+            "review",
+            "block"
+          ]
+        }
+      }
+    },
+    "soft_signals": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "recent_package_age_days": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "maintainer_set_change": {
+          "enum": [
+            "warn",
+            "review"
+          ]
+        },
+        "publisher_identity_drift": {
+          "enum": [
+            "warn",
+            "review"
+          ]
+        }
+      }
+    },
+    "waivers": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "file": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    }
+  },
+  "$defs": {
+    "provenanceRule": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "require_for": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "missing_action": {
+          "enum": [
+            "review",
+            "block"
+          ]
+        }
+      }
+    }
+  }
+}

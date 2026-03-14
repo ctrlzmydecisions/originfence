@@ -1,0 +1,7 @@
+{
+  "name": "fixture-app",
+  "version": "1.0.0",
+  "dependencies": {
+    "weird-pkg": "^9.9.9"
+  }
+}

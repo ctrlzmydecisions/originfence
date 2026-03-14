@@ -1,0 +1,7 @@
+Decision: failure
+Changed subjects: 1
+Blocked: 1  Review: 0  Warn: 0  Allow: 0
+
+[block] unsafe-lib@1.0.0
+  code: REGISTRY_QUARANTINED
+  next: Remove or replace the dependency.

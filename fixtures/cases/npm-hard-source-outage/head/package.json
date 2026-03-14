@@ -1,0 +1,7 @@
+{
+  "name": "fixture-app",
+  "version": "1.0.0",
+  "dependencies": {
+    "flaky-lib": "^1.0.0"
+  }
+}

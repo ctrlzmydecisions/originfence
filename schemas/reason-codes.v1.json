@@ -1,0 +1,114 @@
+[
+  {
+    "code": "KNOWN_MALICIOUS",
+    "default_decision": "block",
+    "severity": "critical",
+    "waivable": false,
+    "next_action_kind": "remove_dependency",
+    "next_action_summary": "Remove the dependency immediately."
+  },
+  {
+    "code": "REGISTRY_QUARANTINED",
+    "default_decision": "block",
+    "severity": "critical",
+    "waivable": false,
+    "next_action_kind": "replace_dependency",
+    "next_action_summary": "Remove or replace the dependency."
+  },
+  {
+    "code": "SOURCE_DENIED",
+    "default_decision": "block",
+    "severity": "high",
+    "waivable": false,
+    "next_action_kind": "use_approved_source",
+    "next_action_summary": "Use an approved registry source."
+  },
+  {
+    "code": "INVALID_PROVENANCE",
+    "default_decision": "block",
+    "severity": "critical",
+    "waivable": false,
+    "next_action_kind": "investigate_publisher",
+    "next_action_summary": "Replace the artifact or investigate the publisher."
+  },
+  {
+    "code": "MANIFEST_LOCKFILE_OUT_OF_SYNC",
+    "default_decision": "block",
+    "severity": "high",
+    "waivable": true,
+    "next_action_kind": "refresh_lockfile",
+    "next_action_summary": "Re-resolve and commit the correct lockfile."
+  },
+  {
+    "code": "DIRECT_URL_SOURCE",
+    "default_decision": "review",
+    "severity": "high",
+    "waivable": true,
+    "next_action_kind": "move_to_registry",
+    "next_action_summary": "Move the dependency to an approved registry or justify the exception."
+  },
+  {
+    "code": "VCS_SOURCE",
+    "default_decision": "review",
+    "severity": "high",
+    "waivable": true,
+    "next_action_kind": "publish_or_waive",
+    "next_action_summary": "Pin and justify the dependency or publish it internally."
+  },
+  {
+    "code": "MISSING_PROVENANCE",
+    "default_decision": "review",
+    "severity": "medium",
+    "waivable": true,
+    "next_action_kind": "require_provenance_or_waive",
+    "next_action_summary": "Waive temporarily or use a publisher with supported provenance."
+  },
+  {
+    "code": "PUBLISHER_IDENTITY_DRIFT",
+    "default_decision": "review",
+    "severity": "medium",
+    "waivable": true,
+    "next_action_kind": "confirm_publisher",
+    "next_action_summary": "Confirm that the new publisher, workflow, or repository is expected."
+  },
+  {
+    "code": "MAINTAINER_SET_CHANGE",
+    "default_decision": "warn",
+    "severity": "medium",
+    "waivable": true,
+    "next_action_kind": "validate_ownership_change",
+    "next_action_summary": "Validate the recent ownership or maintainer change."
+  },
+  {
+    "code": "RECENT_PACKAGE_AGE",
+    "default_decision": "warn",
+    "severity": "low",
+    "waivable": true,
+    "next_action_kind": "review_if_sensitive",
+    "next_action_summary": "Review the package manually if it is security-sensitive."
+  },
+  {
+    "code": "SOFT_SIGNAL_SOURCE_UNAVAILABLE",
+    "default_decision": "warn",
+    "severity": "medium",
+    "waivable": false,
+    "next_action_kind": "note_lower_confidence",
+    "next_action_summary": "Continue, but note that confidence is lower until the source recovers."
+  },
+  {
+    "code": "HARD_SIGNAL_SOURCE_UNAVAILABLE",
+    "default_decision": "block",
+    "severity": "high",
+    "waivable": false,
+    "next_action_kind": "retry_or_refresh_cache",
+    "next_action_summary": "Retry after the source recovers or use a fresh trusted cache."
+  },
+  {
+    "code": "UNSUPPORTED_PROJECT_FORMAT",
+    "default_decision": "block",
+    "severity": "high",
+    "waivable": false,
+    "next_action_kind": "use_supported_format",
+    "next_action_summary": "Use a supported lockfile or requirements format before enabling OriginFence."
+  }
+]

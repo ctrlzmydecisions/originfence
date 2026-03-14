@@ -1,0 +1,7 @@
+{
+  "name": "fixture-app",
+  "version": "1.0.0",
+  "dependencies": {
+    "cached-lib": "^2.0.0"
+  }
+}

@@ -1,0 +1,517 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://originfence.local/schemas/decision-report.schema.json",
+  "title": "OriginFence Decision Report",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "generated_at",
+    "tool_version",
+    "status",
+    "decision",
+    "summary",
+    "counts",
+    "paths",
+    "policy",
+    "results"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "1"
+    },
+    "generated_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "tool_version": {
+      "type": "string",
+      "minLength": 1
+    },
+    "enforcement_mode": {
+      "enum": [
+        "enforce",
+        "observe"
+      ]
+    },
+    "status": {
+      "enum": [
+        "success",
+        "failure",
+        "neutral"
+      ]
+    },
+    "decision": {
+      "enum": [
+        "allow",
+        "warn",
+        "review",
+        "block",
+        "neutral"
+      ]
+    },
+    "summary": {
+      "type": "string",
+      "minLength": 1
+    },
+    "counts": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "changed_subjects",
+        "allow",
+        "warn",
+        "review",
+        "block"
+      ],
+      "properties": {
+        "changed_subjects": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "allow": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "warn": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "review": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "block": {
+          "type": "integer",
+          "minimum": 0
+        }
+      }
+    },
+    "paths": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "base",
+        "head"
+      ],
+      "properties": {
+        "base": {
+          "type": "string",
+          "minLength": 1
+        },
+        "head": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "policy": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "source",
+        "checksum"
+      ],
+      "properties": {
+        "source": {
+          "type": "string",
+          "minLength": 1
+        },
+        "checksum": {
+          "type": "string",
+          "minLength": 1
+        },
+        "waivers_file": {
+          "type": "string"
+        }
+      }
+    },
+    "unsupported_files": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "diagnostics": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/diagnostic"
+      }
+    },
+    "results": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/result"
+      }
+    }
+  },
+  "$defs": {
+    "decision": {
+      "enum": [
+        "allow",
+        "warn",
+        "review",
+        "block"
+      ]
+    },
+    "source_type": {
+      "enum": [
+        "registry",
+        "direct_url",
+        "vcs",
+        "file",
+        "unknown"
+      ]
+    },
+    "reason": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "code",
+        "severity",
+        "decision",
+        "message",
+        "evidence_refs",
+        "waivable"
+      ],
+      "properties": {
+        "code": {
+          "type": "string",
+          "minLength": 1
+        },
+        "severity": {
+          "enum": [
+            "low",
+            "medium",
+            "high",
+            "critical"
+          ]
+        },
+        "decision": {
+          "$ref": "#/$defs/decision"
+        },
+        "message": {
+          "type": "string",
+          "minLength": 1
+        },
+        "evidence_refs": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "waivable": {
+          "type": "boolean"
+        }
+      }
+    },
+    "evidence": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "source",
+        "kind",
+        "ref"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "source": {
+          "type": "string",
+          "minLength": 1
+        },
+        "kind": {
+          "type": "string",
+          "minLength": 1
+        },
+        "ref": {
+          "type": "string",
+          "minLength": 1
+        },
+        "fetched_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "verified": {
+          "type": "boolean"
+        },
+        "stale": {
+          "type": "boolean"
+        }
+      }
+    },
+    "diagnostic": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "level",
+        "source",
+        "code",
+        "message"
+      ],
+      "properties": {
+        "level": {
+          "enum": [
+            "info",
+            "warn",
+            "error"
+          ]
+        },
+        "source": {
+          "type": "string",
+          "minLength": 1
+        },
+        "code": {
+          "type": "string",
+          "minLength": 1
+        },
+        "message": {
+          "type": "string",
+          "minLength": 1
+        },
+        "subject_ref": {
+          "type": "string"
+        }
+      }
+    },
+    "waiver": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "owner",
+        "justification",
+        "created_at",
+        "expires_at",
+        "scope",
+        "reason_codes",
+        "effect"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "owner": {
+          "type": "string",
+          "minLength": 1
+        },
+        "justification": {
+          "type": "string",
+          "minLength": 1
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "expires_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "scope": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "ecosystem": {
+              "enum": [
+                "npm",
+                "pypi"
+              ]
+            },
+              "package": {
+                "type": "string"
+              },
+              "version": {
+                "type": "string"
+              },
+              "path": {
+                "type": "string"
+            }
+          }
+        },
+        "reason_codes": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "effect": {
+          "enum": [
+            "downgrade_to_warn",
+            "downgrade_to_allow"
+          ]
+        }
+      }
+    },
+    "next_action": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "kind",
+        "summary"
+      ],
+      "properties": {
+        "kind": {
+          "type": "string",
+          "minLength": 1
+        },
+        "summary": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "evaluation_meta": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "evaluated_at",
+        "tool_version",
+        "hard_signal_state",
+        "soft_signal_state",
+        "stale_evidence_refs"
+      ],
+      "properties": {
+        "evaluated_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "tool_version": {
+          "type": "string",
+          "minLength": 1
+        },
+        "hard_signal_state": {
+          "enum": [
+            "fresh",
+            "stale",
+            "missing",
+            "not_checked"
+          ]
+        },
+        "soft_signal_state": {
+          "enum": [
+            "fresh",
+            "stale",
+            "missing",
+            "not_checked"
+          ]
+        },
+        "stale_evidence_refs": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      }
+    },
+    "result": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schema_version",
+        "subject",
+        "base_decision",
+        "effective_decision",
+        "waived",
+        "summary",
+        "reasons",
+        "evidence",
+        "waivers_applied",
+        "next_action",
+        "evaluation_meta"
+      ],
+      "properties": {
+        "schema_version": {
+          "const": "1"
+        },
+        "subject": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "ecosystem",
+            "name",
+            "version",
+            "source_type",
+            "top_level"
+          ],
+          "properties": {
+            "ecosystem": {
+              "enum": [
+                "npm",
+                "pypi"
+              ]
+            },
+            "name": {
+              "type": "string",
+              "minLength": 1
+            },
+            "version": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "source_type": {
+              "$ref": "#/$defs/source_type"
+            },
+            "manifest_path": {
+              "type": "string"
+            },
+            "lockfile_path": {
+              "type": "string"
+            },
+            "top_level": {
+              "type": "boolean"
+            }
+          }
+        },
+        "base_decision": {
+          "$ref": "#/$defs/decision"
+        },
+        "effective_decision": {
+          "$ref": "#/$defs/decision"
+        },
+        "waived": {
+          "type": "boolean"
+        },
+        "waived_from": {
+          "$ref": "#/$defs/decision"
+        },
+        "summary": {
+          "type": "string",
+          "minLength": 1
+        },
+        "reasons": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/reason"
+          }
+        },
+        "evidence": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/evidence"
+          }
+        },
+        "waivers_applied": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/waiver"
+          }
+        },
+        "next_action": {
+          "$ref": "#/$defs/next_action"
+        },
+        "evaluation_meta": {
+          "$ref": "#/$defs/evaluation_meta"
+        }
+      }
+    }
+  }
+}

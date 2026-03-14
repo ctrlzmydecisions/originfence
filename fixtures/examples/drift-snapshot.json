@@ -1,0 +1,17 @@
+{
+  "schema_version": "1",
+  "captured_at": "2026-03-13T12:00:00Z",
+  "ecosystem": "npm",
+  "package": "lodash",
+  "version": "4.17.21",
+  "registry_host": "registry.npmjs.org",
+  "repository": "https://github.com/lodash/lodash",
+  "publisher_identity": "lodash-bot",
+  "maintainers": [
+    "lodash-team"
+  ],
+  "serial": "12345",
+  "source_refs": [
+    "https://registry.npmjs.org/lodash"
+  ]
+}

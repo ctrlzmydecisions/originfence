@@ -1,0 +1,93 @@
+{
+  "schema_version": "1",
+  "generated_at": "2026-03-13T12:00:00Z",
+  "tool_version": "0.1.0",
+  "status": "success",
+  "decision": "warn",
+  "summary": "1 changed subject(s): 0 blocked, 0 review, 1 warn, 0 allow.",
+  "counts": {
+    "changed_subjects": 1,
+    "allow": 0,
+    "warn": 1,
+    "review": 0,
+    "block": 0
+  },
+  "paths": {
+    "base": "/Users/nsatyakrishna/Code/OriginFence/fixtures/cases/npm-soft-warn/base",
+    "head": "/Users/nsatyakrishna/Code/OriginFence/fixtures/cases/npm-soft-warn/head"
+  },
+  "policy": {
+    "source": "builtin:default",
+    "checksum": "61d8c0dfa5e6e8a9cad63f5e2f9a4ced7fe8e1ef21abed9b0d4893e6632574f8",
+    "waivers_file": ".originfence/waivers.yaml"
+  },
+  "unsupported_files": [],
+  "results": [
+    {
+      "schema_version": "1",
+      "subject": {
+        "ecosystem": "npm",
+        "name": "fresh-lib",
+        "version": "0.2.0",
+        "source_type": "registry",
+        "manifest_path": "package.json",
+        "lockfile_path": "package-lock.json",
+        "top_level": true
+      },
+      "base_decision": "warn",
+      "effective_decision": "warn",
+      "waived": false,
+      "summary": "fresh-lib@0.2.0 is warn because fresh-lib@0.2.0 has a recent maintainer or owner set change.",
+      "reasons": [
+        {
+          "code": "MAINTAINER_SET_CHANGE",
+          "severity": "medium",
+          "decision": "warn",
+          "message": "fresh-lib@0.2.0 has a recent maintainer or owner set change.",
+          "evidence_refs": [
+            "ev2"
+          ],
+          "waivable": true
+        },
+        {
+          "code": "RECENT_PACKAGE_AGE",
+          "severity": "low",
+          "decision": "warn",
+          "message": "fresh-lib@0.2.0 is newer than the configured recent-package threshold.",
+          "evidence_refs": [
+            "ev1"
+          ],
+          "waivable": true
+        }
+      ],
+      "evidence": [
+        {
+          "id": "ev1",
+          "source": "npm_registry",
+          "kind": "registry_metadata",
+          "ref": "fresh-lib@0.2.0",
+          "fetched_at": "2026-03-13T12:00:00Z"
+        },
+        {
+          "id": "ev2",
+          "source": "ptg_snapshot",
+          "kind": "cache_meta",
+          "ref": "maintainers:fresh-lib",
+          "fetched_at": "2026-03-13T12:00:00Z"
+        }
+      ],
+      "waivers_applied": [],
+      "next_action": {
+        "kind": "validate_ownership_change",
+        "summary": "Validate the recent ownership or maintainer change."
+      },
+      "evaluation_meta": {
+        "evaluated_at": "2026-03-13T12:00:00Z",
+        "tool_version": "0.1.0",
+        "hard_signal_state": "fresh",
+        "soft_signal_state": "fresh",
+        "stale_evidence_refs": []
+      }
+    }
+  ]
+}

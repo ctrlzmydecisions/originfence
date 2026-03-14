@@ -1,0 +1,64 @@
+<svg width="1280" height="640" viewBox="0 0 1280 640" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bg" x1="90" y1="60" x2="1190" y2="590" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#F6F6F0"/>
+      <stop offset="1" stop-color="#EEF1EA"/>
+    </linearGradient>
+    <linearGradient id="card" x1="710" y1="170" x2="1110" y2="470" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#112A29"/>
+      <stop offset="1" stop-color="#193837"/>
+    </linearGradient>
+    <filter id="shadow-soft" x="0" y="0" width="1280" height="640" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB">
+      <feDropShadow dx="0" dy="20" stdDeviation="24" flood-color="#122220" flood-opacity="0.12"/>
+    </filter>
+    <filter id="shadow-card" x="0" y="0" width="1280" height="640" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB">
+      <feDropShadow dx="0" dy="18" stdDeviation="18" flood-color="#10201E" flood-opacity="0.16"/>
+    </filter>
+  </defs>
+
+  <rect width="1280" height="640" rx="28" fill="url(#bg)"/>
+
+  <circle cx="1136" cy="108" r="148" fill="#DDE7DF" fill-opacity="0.7"/>
+  <circle cx="1184" cy="188" r="74" fill="#CFE0D7" fill-opacity="0.95"/>
+  <circle cx="120" cy="564" r="128" fill="#E6ECE4" fill-opacity="0.8"/>
+
+  <rect x="68" y="60" width="1144" height="520" rx="30" fill="#F8F8F3" stroke="#D8DED5"/>
+
+  <text x="116" y="156" fill="#102625" font-family="ui-sans-serif, -apple-system, BlinkMacSystemFont, Segoe UI, sans-serif" font-size="64" font-weight="800">OriginFence</text>
+  <text x="116" y="214" fill="#1A3B38" font-family="ui-sans-serif, -apple-system, BlinkMacSystemFont, Segoe UI, sans-serif" font-size="34" font-weight="700">Trust new dependency changes</text>
+  <text x="116" y="256" fill="#1A3B38" font-family="ui-sans-serif, -apple-system, BlinkMacSystemFont, Segoe UI, sans-serif" font-size="34" font-weight="700">before they merge</text>
+  <text x="116" y="316" fill="#46615F" font-family="ui-sans-serif, -apple-system, BlinkMacSystemFont, Segoe UI, sans-serif" font-size="23">PR-native dependency trust gate with repo policy, waivers,</text>
+  <text x="116" y="348" fill="#46615F" font-family="ui-sans-serif, -apple-system, BlinkMacSystemFont, Segoe UI, sans-serif" font-size="23">provenance, malicious-package intelligence, and readable decisions.</text>
+
+  <g>
+    <rect x="116" y="388" width="136" height="42" rx="21" fill="#DDE6DE"/>
+    <text x="143" y="415" fill="#17312F" font-family="ui-sans-serif, -apple-system, BlinkMacSystemFont, Segoe UI, sans-serif" font-size="18" font-weight="700">PR-native</text>
+
+    <rect x="266" y="388" width="162" height="42" rx="21" fill="#DDE6DE"/>
+    <text x="294" y="415" fill="#17312F" font-family="ui-sans-serif, -apple-system, BlinkMacSystemFont, Segoe UI, sans-serif" font-size="18" font-weight="700">policy + waivers</text>
+
+    <rect x="442" y="388" width="196" height="42" rx="21" fill="#DDE6DE"/>
+    <text x="470" y="415" fill="#17312F" font-family="ui-sans-serif, -apple-system, BlinkMacSystemFont, Segoe UI, sans-serif" font-size="18" font-weight="700">provenance + intel</text>
+  </g>
+
+  <g filter="url(#shadow-card)">
+    <rect x="760" y="174" width="382" height="250" rx="28" fill="url(#card)"/>
+    <text x="792" y="220" fill="#A5C2BC" font-family="ui-sans-serif, -apple-system, BlinkMacSystemFont, Segoe UI, sans-serif" font-size="18" font-weight="700">Pull request result</text>
+    <text x="792" y="266" fill="#F7FBF9" font-family="ui-sans-serif, -apple-system, BlinkMacSystemFont, Segoe UI, sans-serif" font-size="33" font-weight="780">Decision: failure</text>
+    <text x="792" y="300" fill="#C0D3CE" font-family="ui-sans-serif, -apple-system, BlinkMacSystemFont, Segoe UI, sans-serif" font-size="18">1 blocked across 1 changed subject</text>
+
+    <rect x="792" y="330" width="206" height="38" rx="19" fill="#274746"/>
+    <text x="812" y="355" fill="#F7FBF9" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="18" font-weight="700">requests@2.32.5</text>
+
+    <rect x="1008" y="330" width="112" height="38" rx="19" fill="#432B35"/>
+    <text x="1024" y="355" fill="#FFD6E1" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="13.5" font-weight="700">MALICIOUS</text>
+
+    <text x="792" y="396" fill="#EAF4F0" font-family="ui-sans-serif, -apple-system, BlinkMacSystemFont, Segoe UI, sans-serif" font-size="18">Source: OpenSSF malicious-packages via OSV</text>
+    <text x="792" y="424" fill="#EAF4F0" font-family="ui-sans-serif, -apple-system, BlinkMacSystemFont, Segoe UI, sans-serif" font-size="18">Next action: remove immediately</text>
+  </g>
+
+  <g filter="url(#shadow-soft)">
+    <rect x="756" y="466" width="316" height="64" rx="22" fill="#FFFFFF"/>
+    <text x="788" y="507" fill="#17312F" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="18" font-weight="700">success  |  failure  |  neutral</text>
+  </g>
+</svg>

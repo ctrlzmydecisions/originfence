@@ -17,11 +17,24 @@ function normalizeFixtureReportPaths(report: DecisionReport): DecisionReport {
     return path.posix.join(parent, path.basename(value));
   };
 
+  const normalizePolicySource = (value: string): string =>
+    value
+      .split(",")
+      .map((entry) => {
+        const trimmed = entry.trim();
+        return path.isAbsolute(trimmed) ? normalizePath(trimmed) : trimmed;
+      })
+      .join(",");
+
   return {
     ...report,
     paths: {
       base: normalizePath(report.paths.base),
       head: normalizePath(report.paths.head)
+    },
+    policy: {
+      ...report.policy,
+      source: normalizePolicySource(report.policy.source)
     }
   };
 }

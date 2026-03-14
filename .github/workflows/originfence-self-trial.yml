@@ -25,7 +25,7 @@ jobs:
           fetch-depth: 2
 
       - name: Restore OriginFence cache
-        uses: actions/cache/restore@v4
+        uses: actions/cache/restore@v5
         with:
           path: ${{ env.ORIGINFENCE_CACHE_DIR }}
           key: ${{ runner.os }}-originfence-self-${{ github.repository }}-${{ github.ref_name || github.ref }}-${{ github.sha }}
@@ -54,7 +54,7 @@ jobs:
 
       - name: Save OriginFence cache
         if: always()
-        uses: actions/cache/save@v4
+        uses: actions/cache/save@v5
         with:
           path: ${{ env.ORIGINFENCE_CACHE_DIR }}
           key: ${{ runner.os }}-originfence-self-${{ github.repository }}-${{ github.ref_name || github.ref }}-${{ github.sha }}

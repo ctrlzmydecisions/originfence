@@ -76,7 +76,7 @@ jobs:
       comment-state: ${{ steps.originfence.outputs.comment-state }}
     steps:
       - name: Checkout caller repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           fetch-depth: 2
 
@@ -89,7 +89,7 @@ jobs:
           echo "ref=${workflow_ref##*@}" >> "$GITHUB_OUTPUT"
 
       - name: Checkout OriginFence source repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           repository: ${{ steps.source.outputs.repo }}
           ref: ${{ steps.source.outputs.ref }}

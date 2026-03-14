@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 
 import { evaluate } from "../src/evaluator";
+import { setSigstoreVerifierForTests } from "../src/provenance";
 import { makeTempDir, writeFiles } from "./helpers";
 
 function makeJsonResponse(payload: unknown, init?: ResponseInit): Response {
@@ -413,6 +414,7 @@ test("evaluate accepts structurally valid npm attestations when provenance is re
   const headPath = await makeTempDir("originfence-prov-head-");
   const cacheDir = await makeTempDir("originfence-prov-cache-");
   const originalFetch = global.fetch;
+  const originalVerifierReset = () => setSigstoreVerifierForTests(null);
 
   const statement = Buffer.from(JSON.stringify({
     _type: "https://in-toto.io/Statement/v0.1",
@@ -511,6 +513,7 @@ test("evaluate accepts structurally valid npm attestations when provenance is re
               },
               repository: "https://github.com/example/trusted-lib",
               dist: {
+                integrity: "sha512-3q2+7w==",
                 attestations: {
                   url: "https://registry.npmjs.org/-/npm/v1/attestations/trusted-lib@1.0.0",
                   provenance: {
@@ -529,10 +532,21 @@ test("evaluate accepts structurally valid npm attestations when provenance is re
             {
               predicateType: "https://github.com/npm/attestation/tree/main/specs/publish/v0.1",
               bundle: {
+                mediaType: "application/vnd.dev.sigstore.bundle+json;version=0.2",
                 verificationMaterial: {
+                  publicKey: {
+                    hint: "SHA256:test-registry-key"
+                  },
                   tlogEntries: [{}]
                 },
                 dsseEnvelope: {
+                  payloadType: "application/vnd.in-toto+json",
+                  signatures: [
+                    {
+                      sig: "MEUCIQD1JCA8lWR9na44+zY2tr13sEuMCIu+FLS6eDkwESP5KgIgQDNG+eA5PiLSvVd+0AJn3Nk1V3CpRjRoz59L/MMTxyM=",
+                      keyid: "SHA256:test-registry-key"
+                    }
+                  ],
                   payload: statement
                 }
               }
@@ -541,8 +555,20 @@ test("evaluate accepts structurally valid npm attestations when provenance is re
         });
       }
 
+      if (url === "https://registry.npmjs.org/-/npm/v1/keys") {
+        return makeJsonResponse({
+          keys: [
+            {
+              keyid: "SHA256:test-registry-key",
+              key: "MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEY6Ya7W++7aUPzvMTrezH6Ycx3c+HOKYCcNGybJZSCJq/fd7Qa8uuAKtdIkUQtQiEKERhAmE5lMMJhP8OkDOa2g=="
+            }
+          ]
+        });
+      }
+
       throw new Error(`Unexpected fetch: ${url}`);
     };
+    setSigstoreVerifierForTests(async () => ({}));
 
     const result = await evaluate({
       basePath,
@@ -555,6 +581,7 @@ test("evaluate accepts structurally valid npm attestations when provenance is re
     assert.equal(result.report.results[0]?.effective_decision, "allow");
     assert.equal(result.report.results[0]?.reasons.length, 0);
   } finally {
+    originalVerifierReset();
     global.fetch = originalFetch;
   }
 });

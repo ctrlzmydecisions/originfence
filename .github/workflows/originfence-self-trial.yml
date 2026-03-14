@@ -15,12 +15,23 @@ jobs:
   originfence:
     name: originfence
     runs-on: ubuntu-latest
+    env:
+      ORIGINFENCE_CACHE_DIR: .originfence/cache
 
     steps:
       - name: Checkout merge candidate
         uses: actions/checkout@v4
         with:
           fetch-depth: 2
+
+      - name: Restore OriginFence cache
+        uses: actions/cache/restore@v4
+        with:
+          path: ${{ env.ORIGINFENCE_CACHE_DIR }}
+          key: ${{ runner.os }}-originfence-self-${{ github.repository }}-${{ github.ref_name || github.ref }}-${{ github.sha }}
+          restore-keys: |
+            ${{ runner.os }}-originfence-self-${{ github.repository }}-${{ github.ref_name || github.ref }}-
+            ${{ runner.os }}-originfence-self-${{ github.repository }}-
 
       - name: Run OriginFence
         id: originfence
@@ -40,3 +51,10 @@ jobs:
           path: |
             ${{ steps.originfence.outputs.report-path }}
             ${{ steps.originfence.outputs.summary-path }}
+
+      - name: Save OriginFence cache
+        if: always()
+        uses: actions/cache/save@v4
+        with:
+          path: ${{ env.ORIGINFENCE_CACHE_DIR }}
+          key: ${{ runner.os }}-originfence-self-${{ github.repository }}-${{ github.ref_name || github.ref }}-${{ github.sha }}

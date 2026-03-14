@@ -22,6 +22,15 @@ jobs:
         with:
           fetch-depth: 2
 
+      - name: Restore OriginFence cache
+        uses: actions/cache/restore@v4
+        with:
+          path: .originfence/cache
+          key: ${{ runner.os }}-originfence-${{ github.repository }}-${{ github.ref_name || github.ref }}-${{ github.sha }}
+          restore-keys: |
+            ${{ runner.os }}-originfence-${{ github.repository }}-${{ github.ref_name || github.ref }}-
+            ${{ runner.os }}-originfence-${{ github.repository }}-
+
       - name: Run OriginFence
         id: originfence
         uses: your-org/originfence@v0
@@ -40,6 +49,13 @@ jobs:
           path: |
             ${{ steps.originfence.outputs.report-path }}
             ${{ steps.originfence.outputs.summary-path }}
+
+      - name: Save OriginFence cache
+        if: always()
+        uses: actions/cache/save@v4
+        with:
+          path: .originfence/cache
+          key: ${{ runner.os }}-originfence-${{ github.repository }}-${{ github.ref_name || github.ref }}-${{ github.sha }}
 
       # Start in observe mode to surface findings without blocking merges.
       # Switch enforcement-mode to enforce once the repo policy and waivers are tuned.

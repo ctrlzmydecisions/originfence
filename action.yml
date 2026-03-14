@@ -3,7 +3,7 @@ description: Run OriginFence as a GitHub pull-request trust gate.
 
 inputs:
   base-rev:
-    description: Base git revision to compare against. Defaults to the first parent of HEAD.
+    description: Base git revision to compare against. Defaults to the pull_request or merge_group base SHA when available, then the first parent of HEAD.
     required: false
   policy-path:
     description: Optional repo-local policy path. Defaults to .originfence/policy.yaml under the workspace.
@@ -28,7 +28,7 @@ inputs:
     required: false
     default: "true"
   cache-dir:
-    description: Optional cache directory for OriginFence HTTP cache and drift snapshots.
+    description: Optional cache directory for OriginFence HTTP cache, drift snapshots, and provenance trust-root data.
     required: false
   refresh:
     description: Force OriginFence to refresh cache-backed sources before evaluating.

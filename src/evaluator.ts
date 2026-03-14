@@ -376,7 +376,11 @@ async function buildSubjectResult(
     }
   }
 
-  if (evidenceInput.provenance?.present === true && evidenceInput.provenance.verified === false) {
+  if (
+    evidenceInput.provenance?.present === true &&
+    evidenceInput.provenance.checked !== false &&
+    evidenceInput.provenance.verified === false
+  ) {
     const ref = builder.add({
       source: subject.ecosystem === "npm" ? "npm_provenance" : "pypi_attestations",
       kind: "attestation",

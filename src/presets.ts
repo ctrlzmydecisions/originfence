@@ -6,7 +6,7 @@ export type PolicyPresetName = "balanced" | "strict" | "observe";
 
 const presetDescriptions: Record<PolicyPresetName, string> = {
   balanced: "Recommended starting point for most repositories.",
-  strict: "Stricter rollout with provenance required for all supported registry packages and stronger soft-signal review.",
+  strict: "Stricter public-repo rollout with stronger soft-signal review. Add package globs under provenance.require_for once your dependency set has reliable attestations.",
   observe: "Safe initial rollout preset. Pair this with enforcement-mode: observe in the workflow until the repo is tuned."
 };
 
@@ -47,11 +47,11 @@ const presetPolicies: Record<PolicyPresetName, Policy> = {
     },
     provenance: {
       npm: {
-        require_for: ["*"],
+        require_for: [],
         missing_action: "block"
       },
       pypi: {
-        require_for: ["*"],
+        require_for: [],
         missing_action: "block"
       }
     },
@@ -118,6 +118,10 @@ export function renderPolicyPreset(name: PolicyPresetName): string {
 
   if (name === "observe") {
     lines.push("# Recommended workflow input during initial rollout: enforcement-mode: observe");
+  }
+
+  if (name === "strict") {
+    lines.push("# Start with explicit package globs under provenance.require_for instead of requiring provenance for every public package.");
   }
 
   lines.push("");

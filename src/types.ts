@@ -200,6 +200,7 @@ export interface SubjectEvidence {
   provenance?: {
     present: boolean;
     verified: boolean;
+    checked?: boolean;
     ref: string;
   };
   cache?: {

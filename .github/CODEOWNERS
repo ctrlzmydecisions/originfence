@@ -1,0 +1,6 @@
+# Sensitive OriginFence control plane
+/.github/CODEOWNERS @ctrlzmydecisions
+/.github/workflows/ @ctrlzmydecisions
+/.originfence/ @ctrlzmydecisions
+/action.yml @ctrlzmydecisions
+/bundle/github-action/ @ctrlzmydecisions

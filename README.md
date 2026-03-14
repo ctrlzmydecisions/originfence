@@ -25,6 +25,8 @@ OriginFence is intentionally narrow:
 
 This repo dogfoods OriginFence on its own pull requests in `observe` mode via [`.github/workflows/originfence-self-trial.yml`](./.github/workflows/originfence-self-trial.yml).
 
+For production-style rollout, treat `.originfence/*`, [`.github/CODEOWNERS`](./.github/CODEOWNERS), [`.github/workflows/`](./.github/workflows), [action.yml](./action.yml), and [`bundle/github-action`](./bundle/github-action) as sensitive control-plane files.
+
 ## What It Does
 
 OriginFence focuses on the merge boundary:
@@ -106,7 +108,7 @@ jobs:
 
       - name: Run OriginFence
         id: originfence
-        uses: OWNER/originfence@v0
+        uses: ctrlzmydecisions/originfence@85183e0f338e23444146461bd1e5938ab5e0af85
         with:
           enforcement-mode: observe
           write-job-summary: "true"
@@ -134,6 +136,56 @@ jobs:
 Reference examples:
 - [`examples/repo/.github/workflows/originfence-required-check.yml`](./examples/repo/.github/workflows/originfence-required-check.yml)
 - [`.github/workflows/originfence-reusable.yml`](./.github/workflows/originfence-reusable.yml)
+
+For convenience or trial rollouts, you can still use a moving major tag:
+
+```yaml
+- uses: ctrlzmydecisions/originfence@v0
+```
+
+For higher-trust deployment, prefer a full commit SHA. GitHub documents a full-length commit SHA as the only immutable way to pin an action version.
+
+## High-Trust Deployment Model
+
+If you want PR authors to be unable to weaken the gate in the same change, keep a baseline policy outside PR control and layer repo-local policy on top of it.
+
+Recommended pattern:
+- keep a baseline policy in a separate security-owned repository or another path the PR head cannot rewrite
+- pass that file through `baseline-policy-path`
+- keep repo-local `.originfence/policy.yaml` for stricter additions only
+- protect `.originfence/*` with [`.github/CODEOWNERS`](./.github/CODEOWNERS) and branch rules once you have more than one maintainer
+
+Example:
+
+```yaml
+jobs:
+  originfence:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout merge candidate
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 2
+
+      - name: Checkout security baseline policy
+        uses: actions/checkout@v6
+        with:
+          repository: your-org/security-policy
+          ref: main
+          path: .originfence-baseline
+
+      - name: Run OriginFence
+        id: originfence
+        uses: ctrlzmydecisions/originfence@85183e0f338e23444146461bd1e5938ab5e0af85
+        with:
+          baseline-policy-path: .originfence-baseline/originfence/baseline.policy.yaml
+          policy-path: .originfence/policy.yaml
+          waivers-path: .originfence/waivers.yaml
+          enforcement-mode: observe
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+```
+
+OriginFence merges the baseline and repo policy in the stricter direction, so the repo-local policy can tighten the baseline but not weaken it.
 
 ## Release Integrity
 
@@ -173,7 +225,8 @@ Recommended rollout path:
 3. Review job summaries and PR comments for a week or two.
 4. Keep the cache step in place so drift history and provenance trust roots stay warm across runs.
 5. Tune policy and waivers.
-6. Switch to `enforcement-mode: enforce` when the repo is ready.
+6. Move to a pinned-SHA action reference and a baseline policy outside PR control before relying on it as a blocking gate.
+7. Switch to `enforcement-mode: enforce` when the repo is ready.
 
 Preset entry points:
 - [`presets/observe.policy.yaml`](./presets/observe.policy.yaml)

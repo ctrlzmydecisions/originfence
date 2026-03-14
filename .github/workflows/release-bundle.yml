@@ -68,7 +68,10 @@ jobs:
             README.md \
             package.json \
             bundle/github-action
-          sha256sum "release/${bundle_name}" > release/SHA256SUMS.txt
+          (
+            cd release
+            sha256sum "${bundle_name}" > SHA256SUMS.txt
+          )
           echo "bundle=release/${bundle_name}" >> "$GITHUB_OUTPUT"
 
       - name: Upload release assets

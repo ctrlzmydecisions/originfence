@@ -11,7 +11,7 @@ function expectedExitCode(report: DecisionReport): number {
   return report.status === "failure" ? 1 : 0;
 }
 
-function normalizeFixtureReportPaths(report: DecisionReport): DecisionReport {
+function normalizeFixtureReport(report: DecisionReport): DecisionReport {
   const normalizePath = (value: string): string => {
     const parent = path.basename(path.dirname(value));
     return path.posix.join(parent, path.basename(value));
@@ -28,6 +28,7 @@ function normalizeFixtureReportPaths(report: DecisionReport): DecisionReport {
 
   return {
     ...report,
+    tool_version: "<tool-version>",
     paths: {
       base: normalizePath(report.paths.base),
       head: normalizePath(report.paths.head)
@@ -35,7 +36,14 @@ function normalizeFixtureReportPaths(report: DecisionReport): DecisionReport {
     policy: {
       ...report.policy,
       source: normalizePolicySource(report.policy.source)
-    }
+    },
+    results: report.results.map((result) => ({
+      ...result,
+      evaluation_meta: {
+        ...result.evaluation_meta,
+        tool_version: "<tool-version>"
+      }
+    }))
   };
 }
 
@@ -128,7 +136,7 @@ test("fixture cases replay through the evaluator API", async () => {
     const expectedReport = await readJsonFile<DecisionReport>(path.join(fixtureCase.path, "expected", "report.json"));
     const expectedSummary = await readTextFile(path.join(fixtureCase.path, "expected", "summary.txt"));
 
-    assert.deepEqual(normalizeFixtureReportPaths(result.report), normalizeFixtureReportPaths(expectedReport), fixtureCase.name);
+    assert.deepEqual(normalizeFixtureReport(result.report), normalizeFixtureReport(expectedReport), fixtureCase.name);
     assert.equal(`${result.summaryText}\n`, expectedSummary, fixtureCase.name);
   }
 });

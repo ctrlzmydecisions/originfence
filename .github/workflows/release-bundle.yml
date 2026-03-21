@@ -80,6 +80,6 @@ jobs:
         run: gh release upload "${{ github.event.release.tag_name }}" "${{ steps.package.outputs.bundle }}" release/SHA256SUMS.txt --clobber
 
       - name: Attest release bundle
-        uses: actions/attest-build-provenance@v3
+        uses: actions/attest-build-provenance@v4
         with:
           subject-path: ${{ steps.package.outputs.bundle }}
